@@ -204,12 +204,12 @@ nav_msgs::msg::Path SmacPlanner2D::createPlan(
     const geometry_msgs::msg::PoseStamped& goal)
 {
     std::lock_guard<std::mutex> lock_reinit(
-        _mutex);   //可以在对象析构时自动释放锁
+        _mutex);   // 可以在对象析构时自动释放锁
     steady_clock::time_point a = steady_clock::now();
 
     std::unique_lock<nav2_costmap_2d::Costmap2D::mutex_t> lock(*(
         _costmap
-            ->getMutex()));   //具有lock_guard的所有功能，更灵活，在生命周期结束时自动释放锁，且lock可移动，可作为函数返回值
+            ->getMutex()));   // 具有lock_guard的所有功能，更灵活，在生命周期结束时自动释放锁，且lock可移动，可作为函数返回值
 
     // Downsample costmap, if required
     nav2_costmap_2d::Costmap2D* costmap = _costmap;
