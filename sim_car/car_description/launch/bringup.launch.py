@@ -19,21 +19,31 @@ from nav2_common.launch import RewrittenYaml
 def generate_launch_description():
     pkg_gazebo_ros = get_package_share_directory('gazebo_ros')
     pkg_sim_car = get_package_share_directory('sim_car')
+    map_yaml_file = LaunchConfiguration('map')
     pkg_joy = get_package_share_directory('joy')
     world = LaunchConfiguration("world")
     headless = "False"
 
-
-
+    dwayne_nav_dir = get_package_share_directory('dwayne_nav')
     bringup_dir = get_package_share_directory('sim_car')
     launch_dir = os.path.join(bringup_dir, 'launch')
     world_config = DeclareLaunchArgument(
           'world',
-          default_value=[os.path.join(pkg_sim_car, 'worlds', 'simple.world'), ''],
+          default_value=[os.path.join(pkg_sim_car, 'worlds', 'orchard.world'), ''],
           description='SDF world file')
+
+    # world_config = DeclareLaunchArgument(
+    #       'world',
+    #       default_value=[os.path.join(pkg_sim_car, 'worlds', 'simple.world'), ''],
+    #       description='SDF world file')
 
     use_simulator = "True" # LaunchConfiguration('use_simulator')
 
+    declare_map_yaml_cmd = DeclareLaunchArgument(
+        'map',
+        default_value=os.path.join(
+            dwayne_nav_dir, 'map', 'orchard_map.yaml'),
+        description='Full path to map file to load')
 
     # Specify the actions
     start_gazebo_server_cmd = ExecuteProcess(
@@ -79,8 +89,6 @@ def generate_launch_description():
                         }.items()
         )
 
-
-
         # ros2 launch nav2_bringup bringup_launch.py slam:=1 map:=blank.yaml
 
     # # Gazebo launch
@@ -104,6 +112,7 @@ def generate_launch_description():
 
     ld = LaunchDescription()
     ld.add_action(world_config)
+    ld.add_action(declare_map_yaml_cmd)
     ld.add_action(gazebo)
     # ld.add_action(start_gazebo_server_cmd)
     # ld.add_action(start_gazebo_client_cmd)

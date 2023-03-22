@@ -40,8 +40,7 @@ typedef std::pair<double, double> TrigValues;
 typedef std::pair<float, unsigned int> ObstacleHeuristicElement;
 struct ObstacleHeuristicComparator
 {
-    bool operator()(const ObstacleHeuristicElement& a,
-                    const ObstacleHeuristicElement& b) const
+    bool operator()(const ObstacleHeuristicElement& a, const ObstacleHeuristicElement& b) const
     {
         return a.first > b.first;
     }
@@ -163,14 +162,10 @@ public:
 
         inline bool operator==(const Coordinates& rhs)
         {
-            return this->x == rhs.x && this->y == rhs.y &&
-                   this->theta == rhs.theta;
+            return this->x == rhs.x && this->y == rhs.y && this->theta == rhs.theta;
         }
 
-        inline bool operator!=(const Coordinates& rhs)
-        {
-            return !(*this == rhs);
-        }
+        inline bool operator!=(const Coordinates& rhs) { return !(*this == rhs); }
 
         float x, y, theta;
     };
@@ -193,10 +188,7 @@ public:
    * @param NodeHybrid right hand side node reference
    * @return If cell indicies are equal
    */
-    bool operator==(const NodeHybrid& rhs)
-    {
-        return this->_index == rhs._index;
-    }
+    bool operator==(const NodeHybrid& rhs) { return this->_index == rhs._index; }
 
     /**
    * @brief setting continuous coordinate search poses (in partial-cells)
@@ -219,28 +211,19 @@ public:
    * @brief Sets the accumulated cost at this node
    * @param reference to accumulated cost
    */
-    inline void setAccumulatedCost(const float& cost_in)
-    {
-        _accumulated_cost = cost_in;
-    }
+    inline void setAccumulatedCost(const float& cost_in) { _accumulated_cost = cost_in; }
 
     /**
    * @brief Sets the motion primitive index used to achieve node in search
    * @param reference to motion primitive idx
    */
-    inline void setMotionPrimitiveIndex(const unsigned int& idx)
-    {
-        _motion_primitive_index = idx;
-    }
+    inline void setMotionPrimitiveIndex(const unsigned int& idx) { _motion_primitive_index = idx; }
 
     /**
    * @brief Gets the motion primitive index used to achieve node in search
    * @return reference to motion primitive idx
    */
-    inline unsigned int& getMotionPrimitiveIndex()
-    {
-        return _motion_primitive_index;
-    }
+    inline unsigned int& getMotionPrimitiveIndex() { return _motion_primitive_index; }
 
     /**
    * @brief Gets the costmap cost at this node
@@ -270,8 +253,7 @@ public:
    * @param traverse_unknown If we can explore unknown nodes on the graph
    * @return whether this node is valid and collision free
    */
-    bool isNodeValid(const bool&           traverse_unknown,
-                     GridCollisionChecker* collision_checker);
+    bool isNodeValid(const bool& traverse_unknown, GridCollisionChecker* collision_checker);
 
     /**
    * @brief Get traversal cost of parent node to child node
@@ -309,11 +291,7 @@ public:
                                         const unsigned int& y,
                                         const unsigned int& angle)
     {
-        return getIndex(x,
-                        y,
-                        angle,
-                        motion_table.size_x,
-                        motion_table.num_angle_quantization);
+        return getIndex(x, y, angle, motion_table.size_x, motion_table.num_angle_quantization);
     }
 
     /**
@@ -339,8 +317,8 @@ public:
    * @param costmap Costmap ptr to use
    * @return Heuristic cost between the nodes
    */
-    static float getHeuristicCost(const Coordinates& node_coords,
-                                  const Coordinates& goal_coordinates,
+    static float getHeuristicCost(const Coordinates&                node_coords,
+                                  const Coordinates&                goal_coordinates,
                                   const nav2_costmap_2d::Costmap2D* costmap);
 
     /**
@@ -366,8 +344,8 @@ public:
    * @param dim_3_size Number of quantization bins for caching
    * @param search_info Info containing minimum radius to use
    */
-    static void precomputeDistanceHeuristic(const float&       lookup_table_dim,
-                                            const MotionModel& motion_model,
+    static void precomputeDistanceHeuristic(const float&        lookup_table_dim,
+                                            const MotionModel&  motion_model,
                                             const unsigned int& dim_3_size,
                                             const SearchInfo&   search_info);
 
@@ -412,11 +390,10 @@ public:
    * @param neighbors Vector of neighbors to be filled
    */
     void getNeighbors(
-        std::function<bool(const unsigned int&,
-                           nav2_smac_planner::NodeHybrid*&)>& validity_checker,
-        GridCollisionChecker*                                 collision_checker,
-        const bool&                                           traverse_unknown,
-        NodeVector&                                           neighbors);
+        std::function<bool(const unsigned int&, nav2_smac_planner::NodeHybrid*&)>& validity_checker,
+        GridCollisionChecker* collision_checker,
+        const bool&           traverse_unknown,
+        NodeVector&           neighbors);
 
     /**
    * @brief Set the starting pose for planning, as a node index

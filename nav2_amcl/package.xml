@@ -19,7 +19,6 @@
   <author>contradict@gmail.com</author> -->
   <maintainer email="mohammad.haghighipanah@intel.com">Mohammad Haghighipanah</maintainer>
   <license>LGPL-2.1-or-later</license>
-
   <buildtool_depend>ament_cmake</buildtool_depend>
   <build_depend>nav2_common</build_depend>
   <depend>rclcpp</depend>
@@ -38,7 +37,6 @@
   <depend>pluginlib</depend>
   <test_depend>ament_lint_common</test_depend>
   <test_depend>ament_lint_auto</test_depend>
-
   <export>
     <build_type>ament_cmake</build_type>
   </export>

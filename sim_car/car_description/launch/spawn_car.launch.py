@@ -37,6 +37,8 @@ def generate_launch_description():
     robot_description_config = xacro.process_file(xacro_file)
     robot_desc = robot_description_config.toxml()
 
+    remappings = [('','')]
+
     # print(robot_desc)
     
     # start_steering_control = IncludeLaunchDescription(
@@ -48,7 +50,7 @@ def generate_launch_description():
 
     # spawn_car = Node(package='sim_car', executable='spawn_bot.py', arguments=[robot_desc], output='screen')
     spawn_car =  Node(package="gazebo_ros", executable='spawn_entity.py', arguments=
-          ["-topic", "/robot_description", "-entity", "car"])
+          ["-topic", "/robot_description", "-entity", "car","-x","-3.82","-y","-2.83","-z","0.08","-Y","1.57"])
     robot_state_publisher =   Node(
             package="robot_state_publisher",
             executable="robot_state_publisher",

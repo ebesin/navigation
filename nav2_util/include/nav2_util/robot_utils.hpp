@@ -1,3 +1,11 @@
+/*
+ * @Author       : iPEK
+ * @Date         : 2023-02-25
+ * @LastEditTime : 2023-03-15
+ * @Description  : 
+ * 
+ * Copyright (c) 2023 by iPEK, All Rights Reserved. 
+ */
 // Copyright (c) 2018 Intel Corporation
 // Copyright (c) 2019 Steven Macenski
 // Copyright (c) 2019 Samsung Research America
@@ -20,12 +28,11 @@
 #include <string>
 
 #include "geometry_msgs/msg/pose_stamped.hpp"
-#include "tf2_ros/buffer.h"
-#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "tf2_ros/buffer.h"
 
-namespace nav2_util
-{
+namespace nav2_util {
 /**
 * @brief get the current pose of the robot
 * @param global_pose Pose to transform
@@ -35,11 +42,12 @@ namespace nav2_util
 * @param transform_timeout TF Timeout to use for transformation
 * @return bool Whether it could be transformed successfully
 */
-bool getCurrentPose(
-  geometry_msgs::msg::PoseStamped & global_pose,
-  tf2_ros::Buffer & tf_buffer, const std::string global_frame = "map",
-  const std::string robot_frame = "base_link", const double transform_timeout = 0.1,
-  const rclcpp::Time stamp = rclcpp::Time());
+bool getCurrentPose(geometry_msgs::msg::PoseStamped& global_pose,
+                    tf2_ros::Buffer&                 tf_buffer,
+                    const std::string                global_frame = "map",
+                    const std::string                robot_frame  = "base_link",
+                    const double                     transform_timeout = 0.1,
+                    const rclcpp::Time               stamp = rclcpp::Time());
 
 /**
 * @brief get an arbitrary pose in a target frame
@@ -51,11 +59,12 @@ bool getCurrentPose(
 * @return bool Whether it could be transformed successfully
 */
 bool transformPoseInTargetFrame(
-  const geometry_msgs::msg::PoseStamped & input_pose,
-  geometry_msgs::msg::PoseStamped & transformed_pose,
-  tf2_ros::Buffer & tf_buffer, const std::string target_frame,
-  const double transform_timeout = 0.1);
+    const geometry_msgs::msg::PoseStamped& input_pose,
+    geometry_msgs::msg::PoseStamped&       transformed_pose,
+    tf2_ros::Buffer&                       tf_buffer,
+    const std::string                      target_frame,
+    const double                           transform_timeout = 0.1);
 
-}  // end namespace nav2_util
+}   // end namespace nav2_util
 
-#endif  // NAV2_UTIL__ROBOT_UTILS_HPP_
+#endif   // NAV2_UTIL__ROBOT_UTILS_HPP_
