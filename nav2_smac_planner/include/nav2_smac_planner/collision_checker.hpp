@@ -24,8 +24,8 @@ namespace nav2_smac_planner {
  * @class nav2_smac_planner::GridCollisionChecker
  * @brief A costmap grid collision checker
  */
-class GridCollisionChecker : public nav2_costmap_2d::FootprintCollisionChecker<
-                                 nav2_costmap_2d::Costmap2D*>
+class GridCollisionChecker
+    : public nav2_costmap_2d::FootprintCollisionChecker<nav2_costmap_2d::Costmap2D*>
 {
 public:
     /**
@@ -35,8 +35,7 @@ public:
    * @param num_quantizations The number of quantizations to precompute footprint
    * orientations for to speed up collision checking
    */
-    GridCollisionChecker(nav2_costmap_2d::Costmap2D* costmap,
-                         unsigned int                num_quantizations);
+    GridCollisionChecker(nav2_costmap_2d::Costmap2D* costmap, unsigned int num_quantizations);
 
     /**
    * @brief A constructor for nav2_smac_planner::GridCollisionChecker
@@ -56,7 +55,7 @@ public:
    */
     void setFootprint(const nav2_costmap_2d::Footprint& footprint,
                       const bool&                       radius,
-                      const double& possible_inscribed_cost);
+                      const double&                     possible_inscribed_cost);
 
     /**
    * @brief Check if in collision with costmap and footprint at pose

@@ -1,19 +1,29 @@
 '''
-Author       : iPEK
-Date         : 2023-03-13
-LastEditTime : 2023-03-16
+Author       : dwayne
+Date         : 2023-04-19
+LastEditTime : 2023-04-23
 Description  : 
 
-Copyright (c) 2023 by iPEK, All Rights Reserved. 
+Copyright (c) 2023 by dwayne, All Rights Reserved. 
+'''
+'''
+Author       : iPEK
+Date         : 2023-03-13
+LastEditTime : 2023-04-18
+Description  :
+
+Copyright (c) 2023 by iPEK, All Rights Reserved.
 '''
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+
+
+
+
 import os
-
 from launch import LaunchDescription
-
 from launch_ros.actions import Node
-from ament_index_python.packages import get_package_share_directory,get_package_prefix
+from ament_index_python.packages import get_package_share_directory, get_package_prefix
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
@@ -21,8 +31,6 @@ from launch.actions import IncludeLaunchDescription, ExecuteProcess, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from nav2_common.launch import RewrittenYaml
 import xacro
-
-
 def generate_launch_description():
     # Get the directory
     bringup_dir = get_package_share_directory('dwayne_nav')
@@ -43,7 +51,7 @@ def generate_launch_description():
     use_composition = LaunchConfiguration('use_composition')
     use_respawn = LaunchConfiguration('use_respawn')
     behavior_tree_path = LaunchConfiguration("behavior_tree_path")
-    
+
     # Launch configuration variables specific to simulation
     rviz_config_file = LaunchConfiguration('rviz_config_file')
     use_simulator = LaunchConfiguration('use_simulator')
@@ -61,9 +69,9 @@ def generate_launch_description():
     robot_sdf = LaunchConfiguration('robot_sdf')
 
     configured_nav2_params = RewrittenYaml(
-        source_file = params_file,
-        param_rewrites = {'default_nav_to_pose_bt_xml': behavior_tree_path},
-        convert_types=True)    
+        source_file=params_file,
+        param_rewrites={'default_nav_to_pose_bt_xml': behavior_tree_path},
+        convert_types=True)
 
     remappings = [('/tf', 'tf'),
                   ('/tf_static', 'tf_static')]
@@ -89,15 +97,16 @@ def generate_launch_description():
         default_value=os.path.join(
             bringup_dir, 'map', 'orchard_map.yaml'),
         description='Full path to map file to load')
-    
+
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
         default_value='true',
         description='Use simulation (Gazebo) clock if true')
-    
+
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
-        default_value=os.path.join(bringup_dir, 'params', 'dwayne_params.yaml'),
+        default_value=os.path.join(
+            bringup_dir, 'params', 'dwayne_params.yaml'),
         description='Full path to the ROS2 parameters file to use for all launched nodes')
 
     declare_autostart_cmd = DeclareLaunchArgument(
@@ -137,12 +146,12 @@ def generate_launch_description():
         'headless',
         default_value='False',
         description='Whether to execute gzclient)')
-    
+
     declare_world_cmd = DeclareLaunchArgument(
         'world',
         default_value=os.path.join(bringup_dir, 'worlds', 'orchard.world'),
         description='Full path to world model file to load')
-        
+
     declare_robot_name_cmd = DeclareLaunchArgument(
         'robot_name',
         default_value='car',
@@ -150,14 +159,16 @@ def generate_launch_description():
 
     declare_behavior_tree_cmd = DeclareLaunchArgument(
         'behavior_tree_path',
-        default_value=os.path.join(get_package_share_directory('sim_car'), 'behavior_trees', 'navigate_w_replanning_time2.xml'),
+        default_value=os.path.join(get_package_share_directory(
+            'sim_car'), 'behavior_trees', 'navigate_w_replanning_time2.xml'),
         description='name of the robot')
 
     xacro_file = os.path.join(sim_car_dir, 'robot', 'car.urdf.xacro')
-    assert os.path.exists(xacro_file), "The xacro doesnt exist in "+str(xacro_file)
+    assert os.path.exists(
+        xacro_file), "The xacro doesnt exist in "+str(xacro_file)
     robot_description_config = xacro.process_file(xacro_file)
     robot_description = robot_description_config.toxml()
-    
+
     start_robot_state_publisher_cmd = Node(
         condition=IfCondition(use_robot_state_pub),
         package='robot_state_publisher',
@@ -170,15 +181,17 @@ def generate_launch_description():
         remappings=remappings)
 
     if 'GAZEBO_MODEL_PATH' in os.environ:
-        os.environ['GAZEBO_MODEL_PATH'] =  os.environ['GAZEBO_MODEL_PATH'] + ':' + install_dir + '/share'
+        os.environ['GAZEBO_MODEL_PATH'] = os.environ['GAZEBO_MODEL_PATH'] + \
+            ':' + install_dir + '/share'
     else:
-        os.environ['GAZEBO_MODEL_PATH'] =  install_dir + "/share"
+        os.environ['GAZEBO_MODEL_PATH'] = install_dir + "/share"
 
     if 'GAZEBO_PLUGIN_PATH' in os.environ:
-        os.environ['GAZEBO_PLUGIN_PATH'] = os.environ['GAZEBO_PLUGIN_PATH'] + ':' + install_dir + '/lib'
+        os.environ['GAZEBO_PLUGIN_PATH'] = os.environ['GAZEBO_PLUGIN_PATH'] + \
+            ':' + install_dir + '/lib'
     else:
         os.environ['GAZEBO_PLUGIN_PATH'] = install_dir + '/lib'
-        
+
     start_gazebo_spawner_cmd = Node(
         package='gazebo_ros',
         executable='spawn_entity.py',
@@ -195,7 +208,7 @@ def generate_launch_description():
         condition=IfCondition(use_rviz),
         launch_arguments={'namespace': namespace,
                           'use_namespace': use_namespace,
-                          'rviz_config': rviz_config_file}.items())       
+                          'rviz_config': rviz_config_file}.items())
 
     # # Gazebo launch
     gazebo = IncludeLaunchDescription(
@@ -206,7 +219,7 @@ def generate_launch_description():
 
     bringup_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(nav2_bringup_dir,"launch", 'bringup_launch.py')),
+            os.path.join(nav2_bringup_dir, "launch", 'bringup_launch.py')),
         launch_arguments={'namespace': namespace,
                           'use_namespace': use_namespace,
                           'slam': slam,
@@ -217,21 +230,21 @@ def generate_launch_description():
                           'use_composition': use_composition,
                           'use_respawn': use_respawn}.items())
 
-
     base_launch_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(bringup_dir,"launch", 'base_launch.py')),
-            launch_arguments={'use_sim_time': use_sim_time}.items())
-    
+            os.path.join(bringup_dir, "launch", 'base_launch.py')),
+        launch_arguments={'use_sim_time': use_sim_time}.items())
+
     static_transform_cmd = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
-        arguments = ['--x', '0', '--y', '0', '--z', '0', '--yaw', '0', '--pitch', '0', '--roll', '0', '--frame-id', 'map', '--child-frame-id', 'odom']
-    )    
+        arguments=['--x', '0', '--y', '0', '--z', '0', '--yaw', '0', '--pitch',
+                   '0', '--roll', '0', '--frame-id', 'map', '--child-frame-id', 'odom']
+    )
 
     ld = LaunchDescription()
 
-        # Declare the launch options
+    # Declare the launch options
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_use_namespace_cmd)
     ld.add_action(declare_slam_cmd)
@@ -255,8 +268,7 @@ def generate_launch_description():
     ld.add_action(gazebo)
     ld.add_action(start_gazebo_spawner_cmd)
     ld.add_action(start_robot_state_publisher_cmd)
-
-    ld.add_action(rviz_cmd)
+    # ld.add_action(rviz_cmd)
     ld.add_action(base_launch_cmd)
     ld.add_action(bringup_cmd)
     ld.add_action(static_transform_cmd)

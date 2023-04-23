@@ -49,9 +49,9 @@ public:
     typedef std::vector<NodePtr>                                NodeVector;
     typedef std::pair<float, NodeBasic<NodeT>>                  NodeElement;
     typedef typename NodeT::Coordinates                         Coordinates;
-    typedef typename NodeT::CoordinateVector                  CoordinateVector;
-    typedef typename NodeVector::iterator                     NeighborIterator;
-    typedef std::function<bool(const unsigned int&, NodeT*&)> NodeGetter;
+    typedef typename NodeT::CoordinateVector                    CoordinateVector;
+    typedef typename NodeVector::iterator                       NeighborIterator;
+    typedef std::function<bool(const unsigned int&, NodeT*&)>   NodeGetter;
 
     /**
    * @struct nav2_smac_planner::NodeComparator
@@ -65,16 +65,13 @@ public:
         }
     };
 
-    typedef std::
-        priority_queue<NodeElement, std::vector<NodeElement>, NodeComparator>
-            NodeQueue;
+    typedef std::priority_queue<NodeElement, std::vector<NodeElement>, NodeComparator> NodeQueue;
 
     /**
    * @brief A constructor for nav2_smac_planner::PlannerServer
    * @param neighborhood The type of neighborhood to use for search (4 or 8 connected)
    */
-    explicit AStarAlgorithm(const MotionModel& motion_model,
-                            const SearchInfo&  search_info);
+    explicit AStarAlgorithm(const MotionModel& motion_model, const SearchInfo& search_info);
 
     /**
    * @brief A destructor for nav2_smac_planner::AStarAlgorithm
@@ -105,9 +102,7 @@ public:
    * @param tolerance Reference to tolerance in costmap nodes
    * @return if plan was successful
    */
-    bool createPath(CoordinateVector& path,
-                    int&              num_iterations,
-                    const float&      tolerance);
+    bool createPath(CoordinateVector& path, int& num_iterations, const float& tolerance);
 
     /**
    * @brief Sets the collision checker to use
@@ -121,9 +116,7 @@ public:
    * @param my The node Y index of the goal
    * @param dim_3 The node dim_3 index of the goal
    */
-    void setGoal(const unsigned int& mx,
-                 const unsigned int& my,
-                 const unsigned int& dim_3);
+    void setGoal(const unsigned int& mx, const unsigned int& my, const unsigned int& dim_3);
 
     /**
    * @brief Set the starting pose for planning, as a node index
@@ -131,9 +124,7 @@ public:
    * @param my The node Y index of the goal
    * @param dim_3 The node dim_3 index of the goal
    */
-    void setStart(const unsigned int& mx,
-                  const unsigned int& my,
-                  const unsigned int& dim_3);
+    void setStart(const unsigned int& mx, const unsigned int& my, const unsigned int& dim_3);
 
     /**
    * @brief Get maximum number of iterations to plan

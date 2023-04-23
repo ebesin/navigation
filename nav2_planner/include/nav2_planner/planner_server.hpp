@@ -53,15 +53,13 @@ public:
    * @brief A constructor for nav2_planner::PlannerServer
    * @param options Additional options to control creation of the node.
    */
-    explicit PlannerServer(
-        const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+    explicit PlannerServer(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
     /**
    * @brief A destructor for nav2_planner::PlannerServer
    */
     ~PlannerServer();
 
-    using PlannerMap =
-        std::unordered_map<std::string, nav2_core::GlobalPlanner::Ptr>;
+    using PlannerMap = std::unordered_map<std::string, nav2_core::GlobalPlanner::Ptr>;
 
     /**
    * @brief Method to get plan from the desired plugin
@@ -71,7 +69,7 @@ public:
    */
     nav_msgs::msg::Path getPlan(const geometry_msgs::msg::PoseStamped& start,
                                 const geometry_msgs::msg::PoseStamped& goal,
-                                const std::string& planner_id);
+                                const std::string&                     planner_id);
 
 protected:
     /**
@@ -79,42 +77,36 @@ protected:
    * @param state Reference to LifeCycle node state
    * @return SUCCESS or FAILURE
    */
-    nav2_util::CallbackReturn on_configure(
-        const rclcpp_lifecycle::State& state) override;
+    nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State& state) override;
     /**
    * @brief Activate member variables
    * @param state Reference to LifeCycle node state
    * @return SUCCESS or FAILURE
    */
-    nav2_util::CallbackReturn on_activate(
-        const rclcpp_lifecycle::State& state) override;
+    nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State& state) override;
     /**
    * @brief Deactivate member variables
    * @param state Reference to LifeCycle node state
    * @return SUCCESS or FAILURE
    */
-    nav2_util::CallbackReturn on_deactivate(
-        const rclcpp_lifecycle::State& state) override;
+    nav2_util::CallbackReturn on_deactivate(const rclcpp_lifecycle::State& state) override;
     /**
    * @brief Reset member variables
    * @param state Reference to LifeCycle node state
    * @return SUCCESS or FAILURE
    */
-    nav2_util::CallbackReturn on_cleanup(
-        const rclcpp_lifecycle::State& state) override;
+    nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State& state) override;
     /**
    * @brief Called when in shutdown state
    * @param state Reference to LifeCycle node state
    * @return SUCCESS or FAILURE
    */
-    nav2_util::CallbackReturn on_shutdown(
-        const rclcpp_lifecycle::State& state) override;
+    nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State& state) override;
 
-    using ActionToPose       = nav2_msgs::action::ComputePathToPose;
-    using ActionThroughPoses = nav2_msgs::action::ComputePathThroughPoses;
-    using ActionServerToPose = nav2_util::SimpleActionServer<ActionToPose>;
-    using ActionServerThroughPoses =
-        nav2_util::SimpleActionServer<ActionThroughPoses>;
+    using ActionToPose             = nav2_msgs::action::ComputePathToPose;
+    using ActionThroughPoses       = nav2_msgs::action::ComputePathThroughPoses;
+    using ActionServerToPose       = nav2_util::SimpleActionServer<ActionToPose>;
+    using ActionServerThroughPoses = nav2_util::SimpleActionServer<ActionThroughPoses>;
 
     /**
    * @brief Check if an action server is valid / active
@@ -122,8 +114,7 @@ protected:
    * @return SUCCESS or FAILURE
    */
     template<typename T>
-    bool isServerInactive(
-        std::unique_ptr<nav2_util::SimpleActionServer<T>>& action_server);
+    bool isServerInactive(std::unique_ptr<nav2_util::SimpleActionServer<T>>& action_server);
 
     /**
    * @brief Check if an action server has a cancellation request pending
@@ -131,8 +122,7 @@ protected:
    * @return SUCCESS or FAILURE
    */
     template<typename T>
-    bool isCancelRequested(
-        std::unique_ptr<nav2_util::SimpleActionServer<T>>& action_server);
+    bool isCancelRequested(std::unique_ptr<nav2_util::SimpleActionServer<T>>& action_server);
 
     /**
    * @brief Wait for costmap to be valid with updated sensor data or repopulate after a
@@ -147,9 +137,9 @@ protected:
    * @param goal Goal to overwrite
    */
     template<typename T>
-    void getPreemptedGoalIfRequested(
-        std::unique_ptr<nav2_util::SimpleActionServer<T>>& action_server,
-        typename std::shared_ptr<const typename T::Goal>   goal);
+    void
+    getPreemptedGoalIfRequested(std::unique_ptr<nav2_util::SimpleActionServer<T>>& action_server,
+                                typename std::shared_ptr<const typename T::Goal>   goal);
 
     /**
    * @brief Get the starting pose from costmap or message, if valid
@@ -159,10 +149,9 @@ protected:
    * @return bool If successful in finding a valid starting pose
    */
     template<typename T>
-    bool getStartPose(
-        std::unique_ptr<nav2_util::SimpleActionServer<T>>& action_server,
-        typename std::shared_ptr<const typename T::Goal>   goal,
-        geometry_msgs::msg::PoseStamped&                   start);
+    bool getStartPose(std::unique_ptr<nav2_util::SimpleActionServer<T>>& action_server,
+                      typename std::shared_ptr<const typename T::Goal>   goal,
+                      geometry_msgs::msg::PoseStamped&                   start);
 
     /**
    * @brief Transform start and goal poses into the costmap
@@ -173,10 +162,10 @@ protected:
    * @return bool If successful in transforming poses
    */
     template<typename T>
-    bool transformPosesToGlobalFrame(
-        std::unique_ptr<nav2_util::SimpleActionServer<T>>& action_server,
-        geometry_msgs::msg::PoseStamped&                   curr_start,
-        geometry_msgs::msg::PoseStamped&                   curr_goal);
+    bool
+    transformPosesToGlobalFrame(std::unique_ptr<nav2_util::SimpleActionServer<T>>& action_server,
+                                geometry_msgs::msg::PoseStamped&                   curr_start,
+                                geometry_msgs::msg::PoseStamped&                   curr_goal);
 
     /**
    * @brief Validate that the path contains a meaningful path
@@ -187,11 +176,10 @@ protected:
    * @return bool If path is valid
    */
     template<typename T>
-    bool validatePath(
-        std::unique_ptr<nav2_util::SimpleActionServer<T>>& action_server,
-        const geometry_msgs::msg::PoseStamped&             curr_goal,
-        const nav_msgs::msg::Path&                         path,
-        const std::string&                                 planner_id);
+    bool validatePath(std::unique_ptr<nav2_util::SimpleActionServer<T>>& action_server,
+                      const geometry_msgs::msg::PoseStamped&             curr_goal,
+                      const nav_msgs::msg::Path&                         path,
+                      const std::string&                                 planner_id);
 
     // Our action server implements the ComputePathToPose action
     std::unique_ptr<ActionServerToPose>       action_server_pose_;
@@ -214,9 +202,8 @@ protected:
    * @param request to the service
    * @param response from the service
    */
-    void isPathValid(
-        const std::shared_ptr<nav2_msgs::srv::IsPathValid::Request> request,
-        std::shared_ptr<nav2_msgs::srv::IsPathValid::Response>      response);
+    void isPathValid(const std::shared_ptr<nav2_msgs::srv::IsPathValid::Request> request,
+                     std::shared_ptr<nav2_msgs::srv::IsPathValid::Response>      response);
 
     /**
    * @brief Publish a path for visualization purposes
@@ -232,9 +219,8 @@ protected:
         std::vector<rclcpp::Parameter> parameters);
 
     // Dynamic parameters handler
-    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr
-               dyn_params_handler_;
-    std::mutex dynamic_params_lock_;
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr dyn_params_handler_;
+    std::mutex                                                        dynamic_params_lock_;
 
     // Planner
     PlannerMap                                       planners_;
@@ -258,12 +244,10 @@ protected:
     nav2_costmap_2d::Costmap2D*                    costmap_;
 
     // Publishers for the path
-    rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr
-        plan_publisher_;
+    rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr plan_publisher_;
 
     // Service to deterime if the path is valid
-    rclcpp::Service<nav2_msgs::srv::IsPathValid>::SharedPtr
-        is_path_valid_service_;
+    rclcpp::Service<nav2_msgs::srv::IsPathValid>::SharedPtr is_path_valid_service_;
 };
 
 }   // namespace nav2_planner

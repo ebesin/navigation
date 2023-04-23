@@ -1,11 +1,12 @@
 /*
- * @Author       : iPEK
+ * @Author       : dwayne
  * @Date         : 2023-03-11
- * @LastEditTime : 2023-03-16
+ * @LastEditTime : 2023-04-22
  * @Description  : 
  * 
- * Copyright (c) 2023 by iPEK, All Rights Reserved. 
+ * Copyright (c) 2023 by dwayne, All Rights Reserved. 
  */
+
 #ifndef BASE_NODE_HPP_
 #define BASE_NODE_HPP_
 
@@ -26,7 +27,13 @@ namespace base_node {
 class BaseNode : public nav2_util::LifecycleNode
 {
 public:
+    /**
+     * @description  : constructor
+     * @param         {NodeOptions&} options:
+     * @return        {*}
+     */
     BaseNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+
     ~BaseNode();
 
 protected:
@@ -70,8 +77,8 @@ protected:
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr car_pose_sub_;
     // Publishers for the odom
     rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Odometry>::SharedPtr odom_publisher_;
-    std::shared_ptr<tf2_ros::StaticTransformBroadcaster> odom_map_tf_static_broadcaster_;
-    std::shared_ptr<tf2_ros::TransformBroadcaster>       base_link_odom_transform_broadcaster_;
+    std::shared_ptr<tf2_ros::StaticTransformBroadcaster>                     odom_map_tf_static_broadcaster_;
+    std::shared_ptr<tf2_ros::TransformBroadcaster>                           base_link_odom_transform_broadcaster_;
 };
 
 }   // namespace base_node

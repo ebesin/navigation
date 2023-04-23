@@ -167,7 +167,7 @@ void HybridMotionTable::initReedsShepp(unsigned int& size_x_in,
     min_turning_radius           = search_info.minimum_turning_radius;
     motion_model                 = MotionModel::REEDS_SHEPP;
 
-    // angle 就是以最小转弯半径旋转sqrt(2.0)弧长时的航向变化角度
+    // angle 就是以最小转弯半径旋转sqrt(2.0)弦长时的航向变化角度
     float angle = 2.0 * asin(sqrt(2.0) / (2 * min_turning_radius));
     bin_size    = 2.0f * static_cast<float>(M_PI) / static_cast<float>(num_angle_quantization);
     float increments;
@@ -663,10 +663,10 @@ void NodeHybrid::precomputeDistanceHeuristic(const float&        lookup_table_di
     for (float x = ceil(-size_lookup / 2.0); x <= floor(size_lookup / 2.0); x += 1.0) {
         for (float y = 0.0; y <= floor(size_lookup / 2.0); y += 1.0) {
             for (int heading = 0; heading != dim_3_size_int; heading++) {
-                from[0]          = x;
-                from[1]          = y;
-                from[2]          = heading * angular_bin_size;
-                motion_heuristic = motion_table.state_space->distance(from(), to());
+                from[0]                            = x;
+                from[1]                            = y;
+                from[2]                            = heading * angular_bin_size;
+                motion_heuristic                   = motion_table.state_space->distance(from(), to());
                 dist_heuristic_lookup_table[index] = motion_heuristic;
                 index++;
             }

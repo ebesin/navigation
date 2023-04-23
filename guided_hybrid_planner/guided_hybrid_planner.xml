@@ -1,0 +1,5 @@
+<library path="guided_hybrid_planner">
+    <class name="guided_hybrid_planner/GuidedHybridPlanner" type="guided_hybrid_a_star::GuidedHybridPlanner" base_class_type="nav2_core::GlobalPlanner">
+        <description>guided Hybrid-A* planner</description>
+    </class>
+</library>

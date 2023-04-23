@@ -15,9 +15,12 @@
 
 #include <memory>
 
+#include "3rd/backward.hpp"
 #include "nav2_planner/planner_server.hpp"
 #include "rclcpp/rclcpp.hpp"
-
+namespace backward {
+backward::SignalHandling sh;
+}
 int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);

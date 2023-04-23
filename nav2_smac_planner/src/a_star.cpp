@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <omp.h>
@@ -31,8 +32,7 @@ using namespace std::chrono;   // NOLINT
 namespace nav2_smac_planner {
 
 template<typename NodeT>
-AStarAlgorithm<NodeT>::AStarAlgorithm(const MotionModel& motion_model,
-                                      const SearchInfo&  search_info)
+AStarAlgorithm<NodeT>::AStarAlgorithm(const MotionModel& motion_model, const SearchInfo& search_info)
     : _traverse_unknown(true)
     , _max_iterations(0)
     , _max_planning_time(0)
@@ -63,8 +63,7 @@ void AStarAlgorithm<NodeT>::initialize(const bool&         allow_unknown,
     _max_planning_time          = max_planning_time;
     NodeT::precomputeDistanceHeuristic(lookup_table_size, _motion_model, dim_3_size, _search_info);
     _dim3_size = dim_3_size;
-    _expander  = std::make_unique<AnalyticExpansion<NodeT>>(
-        _motion_model, _search_info, _traverse_unknown, _dim3_size);
+    _expander  = std::make_unique<AnalyticExpansion<NodeT>>(_motion_model, _search_info, _traverse_unknown, _dim3_size);
 }
 
 template<>
@@ -84,12 +83,10 @@ void AStarAlgorithm<Node2D>::initialize(const bool&   allow_unknown,
         throw std::runtime_error("Node type Node2D cannot be given non-1 dim 3 quantization.");
     }
     _dim3_size = dim_3_size;
-    _expander  = std::make_unique<AnalyticExpansion<Node2D>>(
-        _motion_model, _search_info, _traverse_unknown, _dim3_size);
+    _expander  = std::make_unique<AnalyticExpansion<Node2D>>(_motion_model, _search_info, _traverse_unknown, _dim3_size);
 }
 
-template<typename NodeT>
-void AStarAlgorithm<NodeT>::setCollisionChecker(GridCollisionChecker* collision_checker)
+template<typename NodeT> void AStarAlgorithm<NodeT>::setCollisionChecker(GridCollisionChecker* collision_checker)
 {
     _collision_checker  = collision_checker;
     _costmap            = collision_checker->getCostmap();
@@ -106,8 +103,7 @@ void AStarAlgorithm<NodeT>::setCollisionChecker(GridCollisionChecker* collision_
     _expander->setCollisionChecker(collision_checker);
 }
 
-template<typename NodeT>
-typename AStarAlgorithm<NodeT>::NodePtr AStarAlgorithm<NodeT>::addToGraph(const unsigned int& index)
+template<typename NodeT> typename AStarAlgorithm<NodeT>::NodePtr AStarAlgorithm<NodeT>::addToGraph(const unsigned int& index)
 {
     auto iter = _graph.find(index);
     if (iter != _graph.end()) {
@@ -117,10 +113,7 @@ typename AStarAlgorithm<NodeT>::NodePtr AStarAlgorithm<NodeT>::addToGraph(const 
     return &(_graph.emplace(index, NodeT(index)).first->second);
 }
 
-template<>
-void AStarAlgorithm<Node2D>::setStart(const unsigned int& mx,
-                                      const unsigned int& my,
-                                      const unsigned int& dim_3)
+template<> void AStarAlgorithm<Node2D>::setStart(const unsigned int& mx, const unsigned int& my, const unsigned int& dim_3)
 {
     if (dim_3 != 0) {
         throw std::runtime_error("Node type Node2D cannot be given non-zero starting dim 3.");
@@ -129,19 +122,13 @@ void AStarAlgorithm<Node2D>::setStart(const unsigned int& mx,
 }
 
 template<typename NodeT>
-void AStarAlgorithm<NodeT>::setStart(const unsigned int& mx,
-                                     const unsigned int& my,
-                                     const unsigned int& dim_3)
+void AStarAlgorithm<NodeT>::setStart(const unsigned int& mx, const unsigned int& my, const unsigned int& dim_3)
 {
     _start = addToGraph(NodeT::getIndex(mx, my, dim_3));
-    _start->setPose(
-        Coordinates(static_cast<float>(mx), static_cast<float>(my), static_cast<float>(dim_3)));
+    _start->setPose(Coordinates(static_cast<float>(mx), static_cast<float>(my), static_cast<float>(dim_3)));
 }
 
-template<>
-void AStarAlgorithm<Node2D>::setGoal(const unsigned int& mx,
-                                     const unsigned int& my,
-                                     const unsigned int& dim_3)
+template<> void AStarAlgorithm<Node2D>::setGoal(const unsigned int& mx, const unsigned int& my, const unsigned int& dim_3)
 {
     if (dim_3 != 0) {
         throw std::runtime_error("Node type Node2D cannot be given non-zero goal dim 3.");
@@ -152,14 +139,11 @@ void AStarAlgorithm<Node2D>::setGoal(const unsigned int& mx,
 }
 
 template<typename NodeT>
-void AStarAlgorithm<NodeT>::setGoal(const unsigned int& mx,
-                                    const unsigned int& my,
-                                    const unsigned int& dim_3)
+void AStarAlgorithm<NodeT>::setGoal(const unsigned int& mx, const unsigned int& my, const unsigned int& dim_3)
 {
     _goal = addToGraph(NodeT::getIndex(mx, my, dim_3));
 
-    typename NodeT::Coordinates goal_coords(
-        static_cast<float>(mx), static_cast<float>(my), static_cast<float>(dim_3));
+    typename NodeT::Coordinates goal_coords(static_cast<float>(mx), static_cast<float>(my), static_cast<float>(dim_3));
 
     if (!_search_info.cache_obstacle_heuristic || goal_coords != _goal_coordinates) {
         if (!_start) {
@@ -186,8 +170,7 @@ template<typename NodeT> bool AStarAlgorithm<NodeT>::areInputsValid()
     }
 
     // Check if ending point is valid
-    if (getToleranceHeuristic() < 0.001 &&
-        !_goal->isNodeValid(_traverse_unknown, _collision_checker)) {
+    if (getToleranceHeuristic() < 0.001 && !_goal->isNodeValid(_traverse_unknown, _collision_checker)) {
         throw std::runtime_error("Failed to compute path, goal is occupied with no tolerance.");
     }
 
@@ -199,10 +182,7 @@ template<typename NodeT> bool AStarAlgorithm<NodeT>::areInputsValid()
     return true;
 }
 
-template<typename NodeT>
-bool AStarAlgorithm<NodeT>::createPath(CoordinateVector& path,
-                                       int&              iterations,
-                                       const float&      tolerance)
+template<typename NodeT> bool AStarAlgorithm<NodeT>::createPath(CoordinateVector& path, int& iterations, const float& tolerance)
 {
     steady_clock::time_point start_time = steady_clock::now();
     _tolerance                          = tolerance;
@@ -230,8 +210,7 @@ bool AStarAlgorithm<NodeT>::createPath(CoordinateVector& path,
 
     // Given an index, return a node ptr reference if its collision-free and valid
     const unsigned int max_index      = getSizeX() * getSizeY() * getSizeDim3();
-    NodeGetter         neighborGetter = [&, this](const unsigned int& index,
-                                          NodePtr&            neighbor_rtn) -> bool {
+    NodeGetter         neighborGetter = [&, this](const unsigned int& index, NodePtr& neighbor_rtn) -> bool {
         if (index >= max_index) {
             return false;
         }
@@ -245,8 +224,7 @@ bool AStarAlgorithm<NodeT>::createPath(CoordinateVector& path,
         // 不用每次都判断是否超时，这里是每5000次迭代判断一次是否超时
         if (iterations % _timing_interval == 0) {
             std::chrono::duration<double> planning_duration =
-                std::chrono::duration_cast<std::chrono::duration<double>>(steady_clock::now() -
-                                                                          start_time);
+                std::chrono::duration_cast<std::chrono::duration<double>>(steady_clock::now() - start_time);
             if (static_cast<double>(planning_duration.count()) >= _max_planning_time) {
                 return false;
             }
@@ -262,14 +240,14 @@ bool AStarAlgorithm<NodeT>::createPath(CoordinateVector& path,
         }
 
         iterations++;
-
+        std::cout << "iterations " << iterations << std::endl;
         // 2) Mark Nbest as visited
         current_node->visited();
 
         // 2.1) Use an analytic expansion (if available) to generate a path
         expansion_result = nullptr;
-        expansion_result = _expander->tryAnalyticExpansion(
-            current_node, getGoal(), neighborGetter, analytic_iterations, closest_distance);
+        expansion_result =
+            _expander->tryAnalyticExpansion(current_node, getGoal(), neighborGetter, analytic_iterations, closest_distance);
         if (expansion_result != nullptr) {
             current_node = expansion_result;
         }
@@ -289,11 +267,9 @@ bool AStarAlgorithm<NodeT>::createPath(CoordinateVector& path,
 
         // 4) Expand neighbors of Nbest not visited
         neighbors.clear();
-        current_node->getNeighbors(
-            neighborGetter, _collision_checker, _traverse_unknown, neighbors);
+        current_node->getNeighbors(neighborGetter, _collision_checker, _traverse_unknown, neighbors);
 
-        for (neighbor_iterator = neighbors.begin(); neighbor_iterator != neighbors.end();
-             ++neighbor_iterator) {
+        for (neighbor_iterator = neighbors.begin(); neighbor_iterator != neighbors.end(); ++neighbor_iterator) {
             neighbor = *neighbor_iterator;
 
             // 4.1) Compute the cost to go to this node
@@ -333,8 +309,7 @@ template<typename NodeT> typename AStarAlgorithm<NodeT>::NodePtr& AStarAlgorithm
     return _goal;
 }
 
-template<typename NodeT>
-typename AStarAlgorithm<NodeT>::NodePtr AStarAlgorithm<NodeT>::getNextNode()
+template<typename NodeT> typename AStarAlgorithm<NodeT>::NodePtr AStarAlgorithm<NodeT>::getNextNode()
 {
     NodeBasic<NodeT> node = _queue.top().second;
     _queue.pop();
@@ -352,7 +327,7 @@ template<typename NodeT> void AStarAlgorithm<NodeT>::addNode(const float& cost, 
 template<typename NodeT> float AStarAlgorithm<NodeT>::getHeuristicCost(const NodePtr& node)
 {
     const Coordinates node_coords = NodeT::getCoords(node->getIndex(), getSizeX(), getSizeDim3());
-    float             heuristic = NodeT::getHeuristicCost(node_coords, _goal_coordinates, _costmap);
+    float             heuristic   = NodeT::getHeuristicCost(node_coords, _goal_coordinates, _costmap);
 
     if (heuristic < _best_heuristic_node.first) {
         _best_heuristic_node = {heuristic, node->getIndex()};

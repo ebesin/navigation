@@ -1,11 +1,12 @@
 /*
- * @Author       : iPEK
+ * @Author       : dwayne
  * @Date         : 2023-03-11
- * @LastEditTime : 2023-03-16
+ * @LastEditTime : 2023-04-22
  * @Description  : 
  * 
- * Copyright (c) 2023 by iPEK, All Rights Reserved. 
+ * Copyright (c) 2023 by dwayne, All Rights Reserved. 
  */
+
 #include "base_node.hpp"
 
 
@@ -27,17 +28,13 @@ nav2_util::CallbackReturn BaseNode::on_configure(const rclcpp_lifecycle::State&)
 {
     RCLCPP_INFO(get_logger(), "Configuring");
     car_pose_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
-        car_topic_,
-        rclcpp::SystemDefaultsQoS(),
-        std::bind(&BaseNode::carPoseCallback, this, std::placeholders::_1));
+        car_topic_, rclcpp::SystemDefaultsQoS(), std::bind(&BaseNode::carPoseCallback, this, std::placeholders::_1));
 
     odom_publisher_ = create_publisher<nav_msgs::msg::Odometry>(odom_topic_, 1);
 
-    odom_map_tf_static_broadcaster_ =
-        std::make_shared<tf2_ros::StaticTransformBroadcaster>(shared_from_this());
+    odom_map_tf_static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(shared_from_this());
 
-    base_link_odom_transform_broadcaster_ =
-        std::make_shared<tf2_ros::TransformBroadcaster>(shared_from_this());
+    base_link_odom_transform_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(shared_from_this());
     return nav2_util::CallbackReturn::SUCCESS;
 }
 

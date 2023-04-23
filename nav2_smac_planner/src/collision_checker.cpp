@@ -17,7 +17,7 @@
 namespace nav2_smac_planner {
 
 GridCollisionChecker::GridCollisionChecker(nav2_costmap_2d::Costmap2D* costmap,
-                                           unsigned int num_quantizations)
+                                           unsigned int                num_quantizations)
     : FootprintCollisionChecker(costmap)
 {
     // Convert number of regular bins into angles
@@ -36,10 +36,9 @@ GridCollisionChecker::GridCollisionChecker(nav2_costmap_2d::Costmap2D* costmap,
 // {
 // }
 
-void GridCollisionChecker::setFootprint(
-    const nav2_costmap_2d::Footprint& footprint,
-    const bool&                       radius,
-    const double&                     possible_inscribed_cost)
+void GridCollisionChecker::setFootprint(const nav2_costmap_2d::Footprint& footprint,
+                                        const bool&                       radius,
+                                        const double&                     possible_inscribed_cost)
 {
     possible_inscribed_cost_ = possible_inscribed_cost;
     footprint_is_radius_     = radius;
@@ -91,14 +90,13 @@ bool GridCollisionChecker::inCollision(const float& x,
 
     // Assumes setFootprint already set
     double wx, wy;
-    costmap_->mapToWorld(
-        static_cast<double>(x), static_cast<double>(y), wx, wy);
+    costmap_->mapToWorld(static_cast<double>(x), static_cast<double>(y), wx, wy);
 
     if (!footprint_is_radius_) {
         // if footprint, then we check for the footprint's points, but first see
         // if the robot is even potentially in an inscribed collision
-        footprint_cost_ = costmap_->getCost(static_cast<unsigned int>(x),
-                                            static_cast<unsigned int>(y));
+        footprint_cost_ =
+            costmap_->getCost(static_cast<unsigned int>(x), static_cast<unsigned int>(y));
 
         if (footprint_cost_ < possible_inscribed_cost_) {
             return false;
@@ -118,9 +116,8 @@ bool GridCollisionChecker::inCollision(const float& x,
         // Use precomputed oriented footprints are done on initialization,
         // offset by translation value to collision check
         geometry_msgs::msg::Point         new_pt;
-        const nav2_costmap_2d::Footprint& oriented_footprint =
-            oriented_footprints_[angle_bin];
-        nav2_costmap_2d::Footprint current_footprint;
+        const nav2_costmap_2d::Footprint& oriented_footprint = oriented_footprints_[angle_bin];
+        nav2_costmap_2d::Footprint        current_footprint;
         current_footprint.reserve(oriented_footprint.size());
         for (unsigned int i = 0; i < oriented_footprint.size(); ++i) {
             new_pt.x = wx + oriented_footprint[i].x;
@@ -139,8 +136,8 @@ bool GridCollisionChecker::inCollision(const float& x,
     }
     else {
         // if radius, then we can check the center of the cost assuming inflation is used
-        footprint_cost_ = costmap_->getCost(static_cast<unsigned int>(x),
-                                            static_cast<unsigned int>(y));
+        footprint_cost_ =
+            costmap_->getCost(static_cast<unsigned int>(x), static_cast<unsigned int>(y));
 
         if (footprint_cost_ == UNKNOWN && traverse_unknown) {
             return false;
@@ -151,8 +148,7 @@ bool GridCollisionChecker::inCollision(const float& x,
     }
 }
 
-bool GridCollisionChecker::inCollision(const unsigned int& i,
-                                       const bool&         traverse_unknown)
+bool GridCollisionChecker::inCollision(const unsigned int& i, const bool& traverse_unknown)
 {
     footprint_cost_ = costmap_->getCost(i);
     if (footprint_cost_ == UNKNOWN && traverse_unknown) {
@@ -169,8 +165,7 @@ float GridCollisionChecker::getCost()
     return static_cast<float>(footprint_cost_);
 }
 
-bool GridCollisionChecker::outsideRange(const unsigned int& max,
-                                        const float&        value)
+bool GridCollisionChecker::outsideRange(const unsigned int& max, const float& value)
 {
     return value < 0.0f || value > max;
 }
