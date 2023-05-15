@@ -24,10 +24,13 @@ find_package(nav2_core REQUIRED)
 find_package(navigation2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(ompl REQUIRED)
+find_package(angles REQUIRED)
 
 # 设置头文件相对路径
 include_directories(
   include
+  ${OMPL_INCLUDE_DIRS}
 )
 
 
@@ -48,8 +51,12 @@ add_library(${library_name} SHARED
   src/costmap_downsampler.cpp
   src/goal_pose_subscriber.cpp
   src/init_pose_subscriber.cpp
+  src/intermediate_pose_subscriber.cpp
   src/guided_hybrid_astar_flow.cpp
   src/visualization_tools.cpp
+  src/smoother.cpp
+  src/dynamicvoronoi/bucketedqueue.cpp
+  src/dynamicvoronoi/dynamicvoronoi.cpp
 )
 
 set(dependencies
@@ -65,12 +72,15 @@ set(dependencies
   nav2_core
   tf2_geometry_msgs
   Eigen3
+  angles
 )
 
 # 链接库和依赖
 ament_target_dependencies(${library_name}
   ${dependencies}
 )
+
+target_link_libraries(${library_name} ${OMPL_LIBRARIES})
 
 # 链接库和依赖
 ament_target_dependencies(${executable_name}

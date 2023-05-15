@@ -288,7 +288,7 @@ planner_server:
     
 
     GridBased:
-      plugin: "guided_hybrid_planner/GuidedHybridPlanner"
+      plugin: "nav2_theta_star_planner/ThetaStarPlanner"
       # steering_change_penalty:
       shot_distance: 0.5
 

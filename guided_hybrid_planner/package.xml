@@ -19,6 +19,8 @@
   <depend>nav2_util</depend>
   <depend>navigation2</depend>
   <depend>nav2_core</depend>
+  <depend>ompl</depend>
+  <depend>angles</depend>
   <export>
     <build_type>ament_cmake</build_type>
   </export>

@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-04-19
- * @LastEditTime : 2023-04-22
+ * @LastEditTime : 2023-05-05
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -29,6 +29,9 @@ GuidedHybridAstarFlow::GuidedHybridAstarFlow(const std::string& name, const rclc
     declare_parameter("steering_penalty", rclcpp::ParameterValue(1.05));
     declare_parameter("steering_change_penalty", rclcpp::ParameterValue(1.5));
     declare_parameter("cost_penalty", rclcpp::ParameterValue(2.0));
+    declare_parameter("publish_serch_tree", rclcpp::ParameterValue(true));
+    declare_parameter("show_log", rclcpp::ParameterValue(true));
+    declare_parameter("serch_radius", rclcpp::ParameterValue(1.0));
 
     costmap_ros_ =
         std::make_shared<nav2_costmap_2d::Costmap2DROS>("global_costmap", std::string{get_namespace()}, "global_costmap");
@@ -40,8 +43,12 @@ GuidedHybridAstarFlow::GuidedHybridAstarFlow(const std::string& name, const rclc
     init_pose_subscriber_thread_ = std::make_unique<nav2_util::NodeThread>(init_pose_subscriber_);
 
     goal_pose_subscriber_ = std::make_shared<GoalPoseSubscriber2D>("/goal_pose");
-    //启动线程运行oal_pose_subscriber节点
+    //启动线程运行goal_pose_subscriber节点
     goal_pose_subscriber_thread_ = std::make_unique<nav2_util::NodeThread>(goal_pose_subscriber_);
+
+    intermeidate_pose_subscriber_ = std::make_shared<IntermeidatePoseSubscriber>("/clicked_point");
+    //启动线程运行oal_pose_subscriber节点
+    intermeidate_pose_subscriber_thread_ = std::make_unique<nav2_util::NodeThread>(intermeidate_pose_subscriber_);
 
     visualization_publisher_        = std::make_shared<VisualizationTools>();
     visualization_publisher_thread_ = std::make_unique<nav2_util::NodeThread>(visualization_publisher_);
@@ -55,6 +62,7 @@ nav2_util::CallbackReturn GuidedHybridAstarFlow::on_configure(const rclcpp_lifec
     auto node = shared_from_this();
     init_pose_subscriber_->configure();
     goal_pose_subscriber_->configure();
+    intermeidate_pose_subscriber_->configure();
     costmap_ros_->configure();
     visualization_publisher_->configure();
     costmap_ = costmap_ros_->getCostmap();
@@ -74,6 +82,9 @@ nav2_util::CallbackReturn GuidedHybridAstarFlow::on_configure(const rclcpp_lifec
     node->get_parameter("steering_penalty", serch_info_.steering_penalty);
     node->get_parameter("steering_change_penalty", serch_info_.steering_change_penalty);
     node->get_parameter("cost_penalty", serch_info_.cost_penalty);
+    node->get_parameter("publish_serch_tree", serch_info_.publish_serch_tree);
+    node->get_parameter("show_log", serch_info_.show_log);
+    node->get_parameter("serch_radius", serch_info_.serch_radius);
 
     RCLCPP_INFO_STREAM(get_logger(), "max_steer_angle: " << serch_info_.max_steer_angle);
     RCLCPP_INFO_STREAM(get_logger(), "wheel_base: " << serch_info_.wheel_base);
@@ -88,6 +99,9 @@ nav2_util::CallbackReturn GuidedHybridAstarFlow::on_configure(const rclcpp_lifec
     RCLCPP_INFO_STREAM(get_logger(), "steering_penalty: " << serch_info_.steering_penalty);
     RCLCPP_INFO_STREAM(get_logger(), "steering_change_penalty: " << serch_info_.steering_change_penalty);
     RCLCPP_INFO_STREAM(get_logger(), "cost_penalty: " << serch_info_.cost_penalty);
+    RCLCPP_INFO_STREAM(get_logger(), "publish_serch_tree: " << serch_info_.publish_serch_tree);
+    RCLCPP_INFO_STREAM(get_logger(), "show_log: " << serch_info_.show_log);
+    RCLCPP_INFO_STREAM(get_logger(), "serch_radius: " << serch_info_.serch_radius);
 
     if (serch_info_.max_iterations < 0) {
         RCLCPP_WARN(node->get_logger(), "最大迭代次数<0,将重新设置为最大值");
@@ -96,10 +110,20 @@ nav2_util::CallbackReturn GuidedHybridAstarFlow::on_configure(const rclcpp_lifec
 
     auto angel2Rad = [](double angle) { return angle / 180 * M_PI; };
 
+
+
+
     serch_info_.max_steer_angle = angel2Rad(serch_info_.max_steer_angle);
-    serch_info_.shot_distance   = serch_info_.shot_distance / costmap_->getResolution();
+
+    SmootherParams params;
+    params.get(node, "");
+    smoother_ = std::make_shared<Smoother>(params);
+    smoother_->initialize(static_cast<double>(serch_info_.wheel_base / tan(serch_info_.max_steer_angle)));
+
+    serch_info_.shot_distance = serch_info_.shot_distance / costmap_->getResolution();
     // serch_info_.move_step_distance = serch_info_.move_step_distance / costmap_->getResolution();
-    serch_info_.wheel_base = serch_info_.wheel_base / costmap_->getResolution();
+    serch_info_.wheel_base   = serch_info_.wheel_base / costmap_->getResolution();
+    serch_info_.serch_radius = serch_info_.serch_radius / costmap_->getResolution();
 
     // collision_checker_ =
     //     std::make_shared<GridCollisionChecker>(costmap_, serch_info_.angle_segment_size);
@@ -116,6 +140,7 @@ nav2_util::CallbackReturn GuidedHybridAstarFlow::on_activate(const rclcpp_lifecy
     RCLCPP_INFO(get_logger(), "Activating");
     init_pose_subscriber_->activate();
     goal_pose_subscriber_->activate();
+    intermeidate_pose_subscriber_->activate();
     costmap_ros_->activate();
     visualization_publisher_->activate();
     plan_publisher_->on_activate();
@@ -133,6 +158,7 @@ nav2_util::CallbackReturn GuidedHybridAstarFlow::on_deactivate(const rclcpp_life
 
     init_pose_subscriber_->deactivate();
     goal_pose_subscriber_->deactivate();
+    intermeidate_pose_subscriber_->deactivate();
     costmap_ros_->deactivate();
     visualization_publisher_->deactivate();
     plan_publisher_->on_deactivate();
@@ -150,6 +176,7 @@ nav2_util::CallbackReturn GuidedHybridAstarFlow::on_cleanup(const rclcpp_lifecyc
     init_pose_subscriber_->cleanup();
     init_poses_.clear();
     goal_pose_subscriber_->cleanup();
+    intermeidate_pose_subscriber_->cleanup();
     goal_poses_.clear();
     costmap_ros_->cleanup();
     visualization_publisher_->cleanup();
@@ -192,18 +219,36 @@ void GuidedHybridAstarFlow::waitForCostmap()
     }
 }
 
+void GuidedHybridAstarFlow::mapToWorld(
+    nav2_costmap_2d::Costmap2D* costmap, const double& mx, const double& my, double& wx, double& wy)
+{
+    wx = costmap->getOriginX() + mx * costmap->getResolution();
+    wy = costmap->getOriginY() + my * costmap->getResolution();
+}
+
+void GuidedHybridAstarFlow::worldToMap(
+    nav2_costmap_2d::Costmap2D* costmap, const double& wx, const double& wy, double& mx, double& my)
+{
+    mx = (wx - costmap->getOriginX()) / costmap->getResolution();
+    my = (wy - costmap->getOriginY()) / costmap->getResolution();
+}
+
 void GuidedHybridAstarFlow::timerCallback()
 {
     readData();
     if (hasValidPose()) {
         initPoseData();
         waitForCostmap();
-        collision_checker_ = std::make_shared<GridCollisionChecker>(costmap_, serch_info_.angle_segment_size);
-
+        RCLCPP_INFO(get_logger(), "generateVoronoiMap......");
+        guided_hybrid_a_star_->generateVoronoiMap();
+        collision_checker_       = std::make_shared<GridCollisionChecker>(costmap_, serch_info_.angle_segment_size);
         nav_msgs::msg::Path plan = createPlan(current_init_pose->pose.pose, current_goal_pose->pose);
+        smoother_->smooth(plan, costmap_, 10);
         plan_publisher_->publish(plan);
     }
 }
+
+
 
 nav_msgs::msg::Path GuidedHybridAstarFlow::createPlan(const geometry_msgs::msg::Pose& start, const geometry_msgs::msg::Pose& goal)
 {
@@ -217,6 +262,28 @@ nav_msgs::msg::Path GuidedHybridAstarFlow::createPlan(const geometry_msgs::msg::
     costmap_->worldToMap(goal.position.x, goal.position.y, mx, my);
     guided_hybrid_a_star_->setGoal(Vec3d(mx, my, tf2::getYaw(goal.orientation)));
 
+    std::vector<geometry_msgs::msg::PointStamped::SharedPtr> w_intermediate_points;
+    intermeidate_pose_subscriber_->getIntermeidatePose(w_intermediate_points);
+    std::vector<Vec3d> m_intermediate_points;
+    m_intermediate_points.resize(w_intermediate_points.size());
+    for (int i = 0; i < w_intermediate_points.size(); ++i) {
+        worldToMap(costmap_,
+                   w_intermediate_points[i]->point.x,
+                   w_intermediate_points[i]->point.y,
+                   m_intermediate_points[i].x(),
+                   m_intermediate_points[i].y());
+        if (i == 0) {
+            double cosValue = Vec2d(mx, my).dot(m_intermediate_points[0].head(2)) /
+                              (Vec2d(mx, my).norm() * m_intermediate_points[0].head(2).norm());
+            m_intermediate_points[i].z() = acos(cosValue);
+        }
+        else {
+            double cosValue = m_intermediate_points[i - 1].head(2).dot(m_intermediate_points[0].head(2)) /
+                              (m_intermediate_points[i - 1].head(2).norm() * m_intermediate_points[0].head(2).norm());
+            m_intermediate_points[i].z() = acos(cosValue);
+        }
+    }
+    guided_hybrid_a_star_->setIntermediateNodes(m_intermediate_points);
     nav_msgs::msg::Path plan;
     plan.header.frame_id = global_frame_;
     geometry_msgs::msg::PoseStamped pose;
@@ -230,7 +297,7 @@ nav_msgs::msg::Path GuidedHybridAstarFlow::createPlan(const geometry_msgs::msg::
     VectorVec3d path;
     std::string error;
     try {
-        if (!guided_hybrid_a_star_->complutePath()) {
+        if (!guided_hybrid_a_star_->computePath()) {
             std::cout << "---------error---------" << std::endl;
             return plan;
         }

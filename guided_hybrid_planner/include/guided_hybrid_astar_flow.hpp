@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-04-19
- * @LastEditTime : 2023-04-22
+ * @LastEditTime : 2023-04-25
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -11,12 +11,14 @@
 #include "goal_pose_subscriber.hpp"
 #include "guided_hybrid_astar.hpp"
 #include "init_pose_subscriber.hpp"
+#include "intermediate_pose_subscriber.hpp"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
 #include "nav2_util/lifecycle_node.hpp"
 #include "nav2_util/node_thread.hpp"
 #include "nav2_util/node_utils.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/timer.hpp"
+#include "smoother.hpp"
 #include "tf2_ros/create_timer_ros.h"
 #include "visualization_tools.hpp"
 #include <chrono>
@@ -92,6 +94,9 @@ public:
     nav_msgs::msg::Path createPlan(const geometry_msgs::msg::Pose& start, const geometry_msgs::msg::Pose& goal);
 
 private:
+    void mapToWorld(nav2_costmap_2d::Costmap2D* costmap, const double& mx, const double& my, double& wx, double& wy);
+    void worldToMap(nav2_costmap_2d::Costmap2D* costmap, const double& wx, const double& wy, double& mx, double& my);
+
     std::string name_;
     std::string global_frame_ = "map";
     std::mutex  mutex_;
@@ -110,6 +115,10 @@ private:
     std::shared_ptr<GoalPoseSubscriber2D>                  goal_pose_subscriber_;
     std::unique_ptr<nav2_util::NodeThread>                 goal_pose_subscriber_thread_;
 
+    std::vector<geometry_msgs::msg::PointStamped::SharedPtr> intermediate_points_;
+    std::shared_ptr<IntermeidatePoseSubscriber>              intermeidate_pose_subscriber_;
+    std::unique_ptr<nav2_util::NodeThread>                   intermeidate_pose_subscriber_thread_;
+
     SearchInfo                         serch_info_;
     std::unique_ptr<GuidedHybridAStar> guided_hybrid_a_star_;
 
@@ -123,5 +132,7 @@ private:
 
     std::shared_ptr<VisualizationTools>    visualization_publisher_;
     std::unique_ptr<nav2_util::NodeThread> visualization_publisher_thread_;
+
+    std::shared_ptr<Smoother> smoother_;
 };
 }   // namespace guided_hybrid_a_star

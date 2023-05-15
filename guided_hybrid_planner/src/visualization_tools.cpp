@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-04-21
- * @LastEditTime : 2023-04-22
+ * @LastEditTime : 2023-04-23
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -63,6 +63,18 @@ void VisualizationTools::add_point_pair(Vec2d first, Vec2d second)
     point.y = second.y();
     point.z = 0.0;
     tree_list_.points.emplace_back(point);
+}
+
+void VisualizationTools::clear_markers()
+{
+    tree_list_.points.clear();
+    tree_list_.header.frame_id = "map";
+    tree_list_.header.stamp    = rclcpp::Clock().now();
+    tree_list_.type            = visualization_msgs::msg::Marker::LINE_LIST;
+    tree_list_.action          = visualization_msgs::msg::Marker::DELETEALL;
+    tree_list_.ns              = "searched_tree";
+    tree_list_.scale.x         = 0.005;
+    serch_tree_publisher_->publish(tree_list_);
 }
 
 void VisualizationTools::publish_point_pairs()

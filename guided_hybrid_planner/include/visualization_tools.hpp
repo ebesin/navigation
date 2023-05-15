@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-04-21
- * @LastEditTime : 2023-04-22
+ * @LastEditTime : 2023-04-23
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -53,6 +53,8 @@ public:
     void add_point_pair(Vec2d first, Vec2d second);
 
     void publish_point_pairs();
+
+    void clear_markers();
 
 
 

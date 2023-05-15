@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-04-06
- * @LastEditTime : 2023-04-18
+ * @LastEditTime : 2023-04-25
  * @Description  : 关于矩阵及向量的定义
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -11,6 +11,8 @@
 #define TYPE_HPP_
 
 
+#include "nav2_util/node_utils.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include <Eigen/Core>
 #include <ostream>
 #include <string>
@@ -59,8 +61,50 @@ struct MotionPose
 };
 
 
+struct SmootherParams
+{
+    /**
+   * @brief A constructor for nav2_smac_planner::SmootherParams
+   */
+    SmootherParams()
+        : holonomic_(false)
+    {}
+
+    /**
+   * @brief Get params from ROS parameter
+   * @param node Ptr to node
+   * @param name Name of plugin
+   */
+    void get(std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node, const std::string& name)
+    {
+        std::string local_name = name + std::string(".smoother.");
+
+        // Smoother params
+        nav2_util::declare_parameter_if_not_declared(node, local_name + "tolerance", rclcpp::ParameterValue(1e-10));
+        node->get_parameter(local_name + "tolerance", tolerance_);
+        nav2_util::declare_parameter_if_not_declared(node, local_name + "max_iterations", rclcpp::ParameterValue(1000));
+        node->get_parameter(local_name + "max_iterations", max_its_);
+        nav2_util::declare_parameter_if_not_declared(node, local_name + "w_data", rclcpp::ParameterValue(0.2));
+        node->get_parameter(local_name + "w_data", w_data_);
+        nav2_util::declare_parameter_if_not_declared(node, local_name + "w_smooth", rclcpp::ParameterValue(0.3));
+        node->get_parameter(local_name + "w_smooth", w_smooth_);
+        nav2_util::declare_parameter_if_not_declared(node, local_name + "do_refinement", rclcpp::ParameterValue(true));
+        node->get_parameter(local_name + "do_refinement", do_refinement_);
+    }
+
+    double tolerance_;
+    int    max_its_;
+    double w_data_;
+    double w_smooth_;
+    bool   holonomic_;
+    bool   do_refinement_;
+};
+
+
 struct SearchInfo
 {
+    bool publish_serch_tree;
+    bool show_log;
 
     float steering_change_penalty;
     float steering_penalty;
@@ -79,12 +123,13 @@ struct SearchInfo
     double shot_distance;
     bool   travel_unknown;
     int    max_iterations;
+
+    double serch_radius;
 };
 
 template<int dim>
 using TypeVectorVecd =
-    typename std::vector<Eigen::Matrix<double, dim, 1>,
-                         Eigen::aligned_allocator<Eigen::Matrix<double, dim, 1>>>;
+    typename std::vector<Eigen::Matrix<double, dim, 1>, Eigen::aligned_allocator<Eigen::Matrix<double, dim, 1>>>;
 
 typedef TypeVectorVecd<2> VectorVec2d;
 typedef TypeVectorVecd<3> VectorVec3d;
@@ -119,10 +164,7 @@ public:
     Modifier(Code pCode)
         : code(pCode)
     {}
-    friend std::ostream& operator<<(std::ostream& os, const Modifier& mod)
-    {
-        return os << "\033[" << mod.code << "m";
-    }
+    friend std::ostream& operator<<(std::ostream& os, const Modifier& mod) { return os << "\033[" << mod.code << "m"; }
 };
 }   // namespace Color
 
@@ -135,10 +177,7 @@ public:
     Modifier(std::string prompt)
         : prompt_(prompt)
     {}
-    friend std::ostream& operator<<(std::ostream& os, const Modifier& mod)
-    {
-        return os << "[---" << mod.prompt_ << "---] ";
-    }
+    friend std::ostream& operator<<(std::ostream& os, const Modifier& mod) { return os << "[---" << mod.prompt_ << "---] "; }
 };
 }   // namespace Flag
 

@@ -1,7 +1,7 @@
 /*
     * @Author       : dwayne
     * @Date         : 2023-04-06
- * @LastEditTime : 2023-04-21
+ * @LastEditTime : 2023-04-23
     * @Description  : hybrid A*中的状态节点
     * 
     * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -77,14 +77,8 @@ public:
 
     double getCost() const { return g_cost_ + h_cost_; }
 
-    void setIntermediateStates(VectorVec3d intermediate_states)
-    {
-        this->intermediate_states_ = intermediate_states;
-    }
-    void getIntermediateStates(VectorVec3d& intermediate_states) const
-    {
-        intermediate_states = this->intermediate_states_;
-    }
+    void setIntermediateStates(VectorVec3d intermediate_states) { this->intermediate_states_ = intermediate_states; }
+    void getIntermediateStates(VectorVec3d& states) const { states = intermediate_states_; }
 
 
 private:

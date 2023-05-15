@@ -63,70 +63,50 @@ void SmacPlannerHybrid::configure(const rclcpp_lifecycle::LifecycleNode::WeakPtr
     bool   smooth_path;
 
     // General planner params
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".downsample_costmap", rclcpp::ParameterValue(false));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".downsample_costmap", rclcpp::ParameterValue(false));
     node->get_parameter(name + ".downsample_costmap", _downsample_costmap);
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".downsampling_factor", rclcpp::ParameterValue(1));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".downsampling_factor", rclcpp::ParameterValue(1));
     node->get_parameter(name + ".downsampling_factor", _downsampling_factor);
 
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".angle_quantization_bins", rclcpp::ParameterValue(72));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".angle_quantization_bins", rclcpp::ParameterValue(72));
     node->get_parameter(name + ".angle_quantization_bins", angle_quantizations);
     _angle_bin_size      = 2.0 * M_PI / angle_quantizations;
     _angle_quantizations = static_cast<unsigned int>(angle_quantizations);
 
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".tolerance", rclcpp::ParameterValue(0.25));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".tolerance", rclcpp::ParameterValue(0.25));
     _tolerance = static_cast<float>(node->get_parameter(name + ".tolerance").as_double());
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".allow_unknown", rclcpp::ParameterValue(true));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".allow_unknown", rclcpp::ParameterValue(true));
     node->get_parameter(name + ".allow_unknown", _allow_unknown);
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".max_iterations", rclcpp::ParameterValue(1000000));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".max_iterations", rclcpp::ParameterValue(1000000));
     node->get_parameter(name + ".max_iterations", _max_iterations);
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".max_on_approach_iterations", rclcpp::ParameterValue(1000));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".max_on_approach_iterations", rclcpp::ParameterValue(1000));
     node->get_parameter(name + ".max_on_approach_iterations", _max_on_approach_iterations);
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".smooth_path", rclcpp::ParameterValue(true));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".smooth_path", rclcpp::ParameterValue(true));
     node->get_parameter(name + ".smooth_path", smooth_path);
 
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".minimum_turning_radius", rclcpp::ParameterValue(0.4));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".minimum_turning_radius", rclcpp::ParameterValue(0.4));
     node->get_parameter(name + ".minimum_turning_radius", _minimum_turning_radius_global_coords);
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".cache_obstacle_heuristic", rclcpp::ParameterValue(false));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".cache_obstacle_heuristic", rclcpp::ParameterValue(false));
     node->get_parameter(name + ".cache_obstacle_heuristic", _search_info.cache_obstacle_heuristic);
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".reverse_penalty", rclcpp::ParameterValue(2.0));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".reverse_penalty", rclcpp::ParameterValue(2.0));
     node->get_parameter(name + ".reverse_penalty", _search_info.reverse_penalty);
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".change_penalty", rclcpp::ParameterValue(0.0));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".change_penalty", rclcpp::ParameterValue(0.0));
     node->get_parameter(name + ".change_penalty", _search_info.change_penalty);
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".non_straight_penalty", rclcpp::ParameterValue(1.2));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".non_straight_penalty", rclcpp::ParameterValue(1.2));
     node->get_parameter(name + ".non_straight_penalty", _search_info.non_straight_penalty);
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".cost_penalty", rclcpp::ParameterValue(2.0));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".cost_penalty", rclcpp::ParameterValue(2.0));
     node->get_parameter(name + ".cost_penalty", _search_info.cost_penalty);
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".retrospective_penalty", rclcpp::ParameterValue(0.015));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".retrospective_penalty", rclcpp::ParameterValue(0.015));
     node->get_parameter(name + ".retrospective_penalty", _search_info.retrospective_penalty);
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".analytic_expansion_ratio", rclcpp::ParameterValue(3.5));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".analytic_expansion_ratio", rclcpp::ParameterValue(3.5));
     node->get_parameter(name + ".analytic_expansion_ratio", _search_info.analytic_expansion_ratio);
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".analytic_expansion_max_length", rclcpp::ParameterValue(3.0));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".analytic_expansion_max_length", rclcpp::ParameterValue(3.0));
     node->get_parameter(name + ".analytic_expansion_max_length", analytic_expansion_max_length_m);
-    _search_info.analytic_expansion_max_length =
-        analytic_expansion_max_length_m / _costmap->getResolution();
+    _search_info.analytic_expansion_max_length = analytic_expansion_max_length_m / _costmap->getResolution();
 
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".max_planning_time", rclcpp::ParameterValue(5.0));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".max_planning_time", rclcpp::ParameterValue(5.0));
     node->get_parameter(name + ".max_planning_time", _max_planning_time);
-    nav2_util::declare_parameter_if_not_declared(
-        node, name + ".lookup_table_size", rclcpp::ParameterValue(20.0));
+    nav2_util::declare_parameter_if_not_declared(node, name + ".lookup_table_size", rclcpp::ParameterValue(20.0));
     node->get_parameter(name + ".lookup_table_size", _lookup_table_size);
 
     nav2_util::declare_parameter_if_not_declared(
@@ -161,8 +141,8 @@ void SmacPlannerHybrid::configure(const rclcpp_lifecycle::LifecycleNode::WeakPtr
     }
     _search_info.minimum_turning_radius =
         _minimum_turning_radius_global_coords / (_costmap->getResolution() * _downsampling_factor);
-    _lookup_table_dim = static_cast<float>(_lookup_table_size) /
-                        static_cast<float>(_costmap->getResolution() * _downsampling_factor);
+    _lookup_table_dim =
+        static_cast<float>(_lookup_table_size) / static_cast<float>(_costmap->getResolution() * _downsampling_factor);
 
     // Make sure its a whole number
     _lookup_table_dim = static_cast<float>(static_cast<int>(_lookup_table_dim));
@@ -178,9 +158,8 @@ void SmacPlannerHybrid::configure(const rclcpp_lifecycle::LifecycleNode::WeakPtr
 
     // Initialize collision checker
     _collision_checker = GridCollisionChecker(_costmap, _angle_quantizations);
-    _collision_checker.setFootprint(_costmap_ros->getRobotFootprint(),
-                                    _costmap_ros->getUseRadius(),
-                                    findCircumscribedCost(_costmap_ros));
+    _collision_checker.setFootprint(
+        _costmap_ros->getRobotFootprint(), _costmap_ros->getUseRadius(), findCircumscribedCost(_costmap_ros));
 
     // Initialize A* template
     _a_star = std::make_unique<AStarAlgorithm<NodeHybrid>>(_motion_model, _search_info);
@@ -203,8 +182,7 @@ void SmacPlannerHybrid::configure(const rclcpp_lifecycle::LifecycleNode::WeakPtr
     if (_downsample_costmap && _downsampling_factor > 1) {
         _costmap_downsampler   = std::make_unique<CostmapDownsampler>();
         std::string topic_name = "downsampled_costmap";
-        _costmap_downsampler->on_configure(
-            node, _global_frame, topic_name, _costmap, _downsampling_factor);
+        _costmap_downsampler->on_configure(node, _global_frame, topic_name, _costmap, _downsampling_factor);
     }
 
     _raw_plan_publisher = node->create_publisher<nav_msgs::msg::Path>("unsmoothed_plan", 1);
@@ -231,8 +209,8 @@ void SmacPlannerHybrid::activate()
     }
     auto node = _node.lock();
     // Add callback for dynamic parameters
-    _dyn_params_handler = node->add_on_set_parameters_callback(
-        std::bind(&SmacPlannerHybrid::dynamicParametersCallback, this, _1));
+    _dyn_params_handler =
+        node->add_on_set_parameters_callback(std::bind(&SmacPlannerHybrid::dynamicParametersCallback, this, _1));
 }
 
 void SmacPlannerHybrid::deactivate()
@@ -320,8 +298,7 @@ nav_msgs::msg::Path SmacPlannerHybrid::createPlan(const geometry_msgs::msg::Pose
     int                          num_iterations = 0;
     std::string                  error;
     try {
-        if (!_a_star->createPath(
-                path, num_iterations, _tolerance / static_cast<float>(costmap->getResolution()))) {
+        if (!_a_star->createPath(path, num_iterations, _tolerance / static_cast<float>(costmap->getResolution()))) {
             if (num_iterations < _a_star->getMaxIterations()) {
                 error = std::string("no valid path found");
             }
@@ -354,13 +331,12 @@ nav_msgs::msg::Path SmacPlannerHybrid::createPlan(const geometry_msgs::msg::Pose
     }
 
     // Find how much time we have left to do smoothing
-    steady_clock::time_point b         = steady_clock::now();
-    duration<double>         time_span = duration_cast<duration<double>>(b - a);
-    double time_remaining = _max_planning_time - static_cast<double>(time_span.count());
+    steady_clock::time_point b              = steady_clock::now();
+    duration<double>         time_span      = duration_cast<duration<double>>(b - a);
+    double                   time_remaining = _max_planning_time - static_cast<double>(time_span.count());
 
 #ifdef BENCHMARK_TESTING
-    std::cout << "It took " << time_span.count() * 1000 << " milliseconds with " << num_iterations
-              << " iterations." << std::endl;
+    std::cout << "It took " << time_span.count() * 1000 << " milliseconds with " << num_iterations << " iterations." << std::endl;
 #endif
 
     // Smooth plan
@@ -371,15 +347,13 @@ nav_msgs::msg::Path SmacPlannerHybrid::createPlan(const geometry_msgs::msg::Pose
 #ifdef BENCHMARK_TESTING
     steady_clock::time_point c          = steady_clock::now();
     duration<double>         time_span2 = duration_cast<duration<double>>(c - b);
-    std::cout << "It took " << time_span2.count() * 1000 << " milliseconds to smooth path."
-              << std::endl;
+    std::cout << "It took " << time_span2.count() * 1000 << " milliseconds to smooth path." << std::endl;
 #endif
 
     return plan;
 }
 
-rcl_interfaces::msg::SetParametersResult SmacPlannerHybrid::dynamicParametersCallback(
-    std::vector<rclcpp::Parameter> parameters)
+rcl_interfaces::msg::SetParametersResult SmacPlannerHybrid::dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters)
 {
     rcl_interfaces::msg::SetParametersResult result;
     std::lock_guard<std::mutex>              lock_reinit(_mutex);
@@ -515,10 +489,10 @@ rcl_interfaces::msg::SetParametersResult SmacPlannerHybrid::dynamicParametersCal
         if (!_downsample_costmap) {
             _downsampling_factor = 1;
         }
-        _search_info.minimum_turning_radius = _minimum_turning_radius_global_coords /
-                                              (_costmap->getResolution() * _downsampling_factor);
-        _lookup_table_dim = static_cast<float>(_lookup_table_size) /
-                            static_cast<float>(_costmap->getResolution() * _downsampling_factor);
+        _search_info.minimum_turning_radius =
+            _minimum_turning_radius_global_coords / (_costmap->getResolution() * _downsampling_factor);
+        _lookup_table_dim =
+            static_cast<float>(_lookup_table_size) / static_cast<float>(_costmap->getResolution() * _downsampling_factor);
 
         // Make sure its a whole number
         _lookup_table_dim = static_cast<float>(static_cast<int>(_lookup_table_dim));
@@ -549,17 +523,15 @@ rcl_interfaces::msg::SetParametersResult SmacPlannerHybrid::dynamicParametersCal
                 auto        node       = _node.lock();
                 std::string topic_name = "downsampled_costmap";
                 _costmap_downsampler   = std::make_unique<CostmapDownsampler>();
-                _costmap_downsampler->on_configure(
-                    node, _global_frame, topic_name, _costmap, _downsampling_factor);
+                _costmap_downsampler->on_configure(node, _global_frame, topic_name, _costmap, _downsampling_factor);
             }
         }
 
         // Re-Initialize collision checker
         if (reinit_collision_checker) {
             _collision_checker = GridCollisionChecker(_costmap, _angle_quantizations);
-            _collision_checker.setFootprint(_costmap_ros->getRobotFootprint(),
-                                            _costmap_ros->getUseRadius(),
-                                            findCircumscribedCost(_costmap_ros));
+            _collision_checker.setFootprint(
+                _costmap_ros->getRobotFootprint(), _costmap_ros->getUseRadius(), findCircumscribedCost(_costmap_ros));
         }
 
         // Re-Initialize smoother

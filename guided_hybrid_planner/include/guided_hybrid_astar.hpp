@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-04-08
- * @LastEditTime : 2023-04-22
+ * @LastEditTime : 2023-05-06
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -12,6 +12,8 @@
 
 #include "collision_checker.hpp"
 #include "costmap_downsampler.hpp"
+#include "dynamicvoronoi/dynamicvoronoi.h"
+#include "geometry_msgs/msg/point_stamped.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "hybrid_state_node.hpp"
 #include "nav2_core/global_planner.hpp"
@@ -71,7 +73,9 @@ public:
      * @description  : 进行hybrid a star计算
      * @return        {*}
      */
-    bool complutePath();
+    bool computePath();
+    bool computePathFromStartToGoal();
+    bool computePathThroughPoses();
 
     bool backtracePath(VectorVec3d& path);
 
@@ -157,6 +161,7 @@ public:
      * @return        {*}
      */
     double computeDistanceHeuristicCost(const StateNodePtr& current_node, const StateNodePtr& target_node);
+    double computeEulerDistanceHeuristicCost(const StateNodePtr& current_node, const StateNodePtr& target_node);
 
     /**
      * @description  : 计算启发式代价
@@ -179,13 +184,33 @@ public:
      */
     double computeTrajCost(const StateNodePtr& current_node_ptr, const StateNodePtr& neighbor_node_ptr);
 
+
+    /**
+     * @description  : 重置规划器参数
+     * @return        {*}
+     */
     void resetAll();
+    void clearTempData();
 
 
+    /**
+     * @description  : 设置可视化
+     * @return        {*}
+     */
     void setVisualizationToolsPtr(const std::shared_ptr<VisualizationTools>& visualization_tool)
     {
         visualization_tools_ptr_ = visualization_tool;
     }
+
+    void setIntermediateNodes(const std::vector<Vec3d>& intermediate_points);
+
+    /**
+     * @description  : 生成维诺图
+     * @return        {*}
+     */
+    void generateVoronoiMap();
+
+    float getVoronoiCost(int m_x, int m_y);
 
 
 private:
@@ -193,6 +218,7 @@ private:
     rclcpp::Logger                           logger_{rclcpp::get_logger("GuidedHybridPlanner")};
     rclcpp_lifecycle::LifecycleNode::WeakPtr node_;
     nav2_costmap_2d::Costmap2D*              costmap_;
+    DynamicVoronoi                           voronoi_;
     std::shared_ptr<RSPath>                  rs_path_ptr_;
     std::shared_ptr<GridCollisionChecker>    collision_checker_;
     std::unique_ptr<CostmapDownsampler>      downsampler_;
@@ -209,6 +235,8 @@ private:
 
     StateNodePtr start_;
     StateNodePtr goal_;
+
+    std::vector<StateNodePtr> intermediate_nodes_;
 
     SearchInfo              serch_info_;
     std::vector<MotionPose> forward_projections_;
