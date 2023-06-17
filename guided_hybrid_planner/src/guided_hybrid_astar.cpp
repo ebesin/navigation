@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-04-08
- * @LastEditTime : 2023-05-07
+ * @LastEditTime : 2023-05-28
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -219,6 +219,7 @@ double GuidedHybridAStar::computeTrajCost(const StateNodePtr& current_node_ptr, 
     float reverse_penalty         = (neighbor_node_ptr->getDirection() == FORWARD) ? 1 : serch_info_.reverse_penalty;
 
     return (voronio_cost + 1) * segment_length * reverse_penalty * steering_penalty * steering_change_penalty;
+    // return segment_length * reverse_penalty * steering_penalty * steering_change_penalty;
 }
 
 double GuidedHybridAStar::computeDistanceHeuristicCost(const StateNodePtr& current_node, const StateNodePtr& target_node)
@@ -321,11 +322,11 @@ double GuidedHybridAStar::computeObstacleHeuristicCost(const StateNodePtr& curre
 
 
     const std::vector<int> neighborhood = {1,
-                                           -1,   // left right
+                                           -1,                 // left right
                                            size_x_int,
-                                           -size_x_int,   // up down
+                                           -size_x_int,        // up down
                                            size_x_int + 1,
-                                           size_x_int - 1,   // upper diagonals
+                                           size_x_int - 1,     // upper diagonals
                                            -size_x_int + 1,
                                            -size_x_int - 1};   // lower diagonals
 

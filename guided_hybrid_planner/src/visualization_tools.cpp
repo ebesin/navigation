@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-04-21
- * @LastEditTime : 2023-04-23
+ * @LastEditTime : 2023-05-28
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -86,10 +86,10 @@ void VisualizationTools::publish_point_pairs()
     tree_list_.ns              = "searched_tree";
     tree_list_.scale.x         = 0.005;
 
-    tree_list_.color.a = 0.6;
-    tree_list_.color.r = 0;
-    tree_list_.color.g = 0;
-    tree_list_.color.b = 1;
+    tree_list_.color.a = 0.5;
+    tree_list_.color.r = 1;
+    tree_list_.color.g = 1;
+    tree_list_.color.b = 0;
 
     tree_list_.pose.orientation.w = 1.0;
     tree_list_.pose.orientation.x = 0.0;
