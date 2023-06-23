@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(nav2_smac_planner)
 
-set(CMAKE_BUILD_TYPE Release) #Debug, Release
+set(CMAKE_BUILD_TYPE Release) # Debug, Release
 
 find_package(ament_cmake REQUIRED)
 find_package(nav2_common REQUIRED)
@@ -44,10 +44,11 @@ include_directories(
 )
 
 find_package(OpenMP)
+
 if(OPENMP_FOUND)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
 set(library_name nav2_smac_planner)
@@ -85,7 +86,7 @@ add_library(${library_name} SHARED
   src/node_basic.cpp
 )
 
-target_link_libraries(${library_name} ${OMPL_LIBRARIES} ${OpenMP_LIBRARIES}  OpenMP::OpenMP_CXX)
+target_link_libraries(${library_name} ${OMPL_LIBRARIES} ${OpenMP_LIBRARIES} OpenMP::OpenMP_CXX)
 target_include_directories(${library_name} PUBLIC ${Eigen3_INCLUDE_DIRS})
 
 ament_target_dependencies(${library_name}

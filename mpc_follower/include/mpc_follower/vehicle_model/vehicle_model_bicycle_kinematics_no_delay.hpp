@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-17
- * @LastEditTime : 2023-06-17
+ * @LastEditTime : 2023-06-21
  * @Description  : vehicle model class of bicycle kinematics without steering delay
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -37,7 +37,7 @@
 #include <eigen3/Eigen/LU>
 
 /**
- * @class vehicle model class of bicycle kinematics without steering delay
+ * Vehicle model class of bicycle kinematics without steering delay
  * @brief calculate model-related values
  */
 class KinematicsBicycleModelNoDelay : public VehicleModelInterface
@@ -48,7 +48,7 @@ public:
    * @param [in] wheelbase wheelbase length [m]
    * @param [in] steer_lim steering angle limit [rad]
    */
-    KinematicsBicycleModelNoDelay(const double& wheelbase, const double& steer_lim);
+    KinematicsBicycleModelNoDelay(const double wheelbase, const double steer_lim);
 
     /**
    * @brief destructor
@@ -56,23 +56,24 @@ public:
     ~KinematicsBicycleModelNoDelay() = default;
 
     /**
-   * @brief calculate discrete model matrix of x_k+1 = Ad * xk + Bd * uk + Wd, yk = Cd * xk
-   * @param [out] Ad coefficient matrix
-   * @param [out] Bd coefficient matrix
-   * @param [out] Cd coefficient matrix
-   * @param [out] Wd coefficient matrix
-   * @param [in] dt Discretization time
+   * @brief calculate discrete model matrix of x_k+1 = a_d * xk + b_d * uk + w_d, yk = c_d * xk
+   * @param [out] a_d coefficient matrix
+   * @param [out] b_d coefficient matrix
+   * @param [out] c_d coefficient matrix
+   * @param [out] w_d coefficient matrix
+   * @param [in] dt Discretization time [s]
    */
     void calculateDiscreteMatrix(
-        Eigen::MatrixXd& Ad, Eigen::MatrixXd& Bd, Eigen::MatrixXd& Cd, Eigen::MatrixXd& Wd, const double& dt) override;
+        Eigen::MatrixXd& a_d, Eigen::MatrixXd& b_d, Eigen::MatrixXd& c_d, Eigen::MatrixXd& w_d, const double dt) override;
 
     /**
    * @brief calculate reference input
-   * @param [out] reference input
+   * @param [out] u_ref input
    */
-    void calculateReferenceInput(Eigen::MatrixXd& Uref) override;
+    void calculateReferenceInput(Eigen::MatrixXd& u_ref) override;
+
+    std::string modelName() override { return "kinematics_no_delay"; };
 
 private:
-    double wheelbase_;   //!< @brief wheelbase length [m]
-    double steer_lim_;   //!< @brief steering angle limit [rad]
+    double m_steer_lim;   //!< @brief steering angle limit [rad]
 };

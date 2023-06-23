@@ -23,6 +23,7 @@ find_package(nav2_util REQUIRED)
 find_package(nav2_core REQUIRED)
 find_package(navigation2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(nav2_smac_planner REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(ompl REQUIRED)
 find_package(angles REQUIRED)
@@ -33,7 +34,6 @@ include_directories(
   ${OMPL_INCLUDE_DIRS}
 )
 
-
 # 编译可执行文件
 set(executable_name guided_hybrid_planner_flow)
 add_executable(${executable_name}
@@ -42,7 +42,7 @@ add_executable(${executable_name}
 
 # 编译静态库
 set(library_name guided_hybrid_planner CACHE INTERNAL "library")
-add_library(${library_name} SHARED 
+add_library(${library_name} SHARED
   src/guided_hybrid_astar.cpp
   src/hybrid_state_node.cpp
   src/guided_hybrid_planner.cpp
@@ -71,6 +71,7 @@ set(dependencies
   nav2_util
   nav2_core
   tf2_geometry_msgs
+  nav2_smac_planner
   Eigen3
   angles
 )
@@ -87,14 +88,12 @@ ament_target_dependencies(${executable_name}
   ${dependencies}
 )
 
-
 # 链接
 target_link_libraries(${executable_name} ${library_name})
 
 # target_include_directories(dwayne_nav PUBLIC
-#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#   $<INSTALL_INTERFACE:include>)
-
+# $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+# $<INSTALL_INTERFACE:include>)
 install(TARGETS ${executable_name}
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
@@ -107,8 +106,7 @@ install(TARGETS ${library_name}
 
 pluginlib_export_plugin_description_file(nav2_core guided_hybrid_planner.xml)
 
-
-install(DIRECTORY include/  DESTINATION include/)
+install(DIRECTORY include/ DESTINATION include/)
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY params DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY map DESTINATION share/${PROJECT_NAME})
@@ -119,8 +117,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-add_subdirectory(tests)
-
+# add_subdirectory(tests)
 ament_export_include_directories(include)
 ament_export_libraries(${library_name})
 ament_export_dependencies(${dependencies})

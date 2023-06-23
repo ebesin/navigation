@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
- * @Date         : 2023-06-17
- * @LastEditTime : 2023-06-17
+ * @Date         : 2023-06-19
+ * @LastEditTime : 2023-06-20
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -37,43 +37,73 @@
 
 #include "mpc_follower/vehicle_model/vehicle_model_bicycle_kinematics_no_delay.h"
 
-/**
- * @class MPC-based waypoints follower class
- * @brief calculate control command to follow reference waypoints
- */
-class MPCFollower
-{
-public:
-    /**
-   * @brief constructor
-   */
-    MPCFollower();
 
-    /**
-   * @brief destructor
-   */
+#include "nav2_util/lifecycle_node.hpp"
+
+
+class MPCFollower : public nav2_util::LifecycleNode
+{
+    MPCFollower(const std::string& name, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
     ~MPCFollower();
 
-private:
-    ros::NodeHandle nh_;                       //!< @brief ros node handle
-    ros::NodeHandle pnh_;                      //!< @brief private ros node handle
-    ros::Publisher  pub_steer_vel_ctrl_cmd_;   //!< @brief topic publisher for control command
-    ros::Publisher  pub_twist_cmd_;            //!< @brief topic publisher for twist command
-    ros::Subscriber sub_ref_path_;             //!< @brief topic subscriber for reference waypoints
-    ros::Subscriber sub_pose_;                 //!< @brief subscriber for current pose
-    ros::Subscriber sub_vehicle_status_;       //!< @brief subscriber for currrent vehicle status
-    ros::Timer      timer_control_;            //!< @brief timer for control command computation
+    /**
+   * @brief Configure node
+   */
+    nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State& state) override;
 
-    MPCTrajectory       ref_traj_;             //!< @brief reference trajectory to be followed
-    Butterworth2dFilter lpf_steering_cmd_;     //!< @brief lowpass filter for steering command
-    Butterworth2dFilter lpf_lateral_error_;    //!< @brief lowpass filter for lateral error to calculate derivatie
-    Butterworth2dFilter lpf_yaw_error_;        //!< @brief lowpass filter for heading error to calculate derivatie
-    autoware_msgs::Lane current_waypoints_;    //!< @brief current waypoints to be followed
+    /**
+   * @brief Activate node
+   */
+    nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State& state) override;
+
+    /**
+   * @brief Deactivate node
+   */
+    nav2_util::CallbackReturn on_deactivate(const rclcpp_lifecycle::State& state) override;
+
+    /**
+   * @brief Cleanup node
+   */
+    nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State& state) override;
+
+    /**
+   * @brief shutdown node
+   */
+    nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State& state) override;
+
+
+private:
+    //控制指令发布话题
+    rclcpp_lifecycle::LifecyclePublisher<mpc_msgs::msg::ControlCommandStamped>::SharedPtr steer_vel_ctrl_cmd_publisher_;
+    //twist发布话题
+    rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_cmd_publisher_;
+    //参考线订阅话题
+    rclcpp::Subscription<mpc_msgs::msg::Lane>::SharedPtr ref_path_subscriber_;
+    //当前位姿订阅话题
+    rclcpp::Subscription<geometry_msgs::msg::Pose>::SharedPtr current_pose_subscriber_;
+    //当前车辆状态订阅话题
+    rclcpp::Subscription<mpc_msgs::msg::VehicleStatus>::SharedPtr vehicle_status_subscriber_;
+    //控制定时器
+    rclcpp::TimerBase::SharedPtr control_timer_;
+    //reference line
+    MPCTrajectory ref_traj_;
+    //需要跟踪的航点
+    mpc_msgs::msg::Lane current_waypoints_;
+    //车辆模型
+    std::shared_ptr<VehicleModelInterface> vehicle_model_ptr_;
+
+    std::string         output_interface_;    //!< @brief output command type
+    std::deque<double>  input_buffer_;        //!< @brief control input (mpc_output) buffer for delay time conpemsation
+    Butterworth2dFilter lpf_steering_cmd_;    //!< @brief lowpass filter for steering command
+    Butterworth2dFilter lpf_lateral_error_;   //!< @brief lowpass filter for lateral error to calculate derivatie
+    Butterworth2dFilter lpf_yaw_error_;       //!< @brief lowpass filter for heading error to calculate derivatie
+    mpc_msgs::msg::Lane current_waypoints_;   //!< @brief current waypoints to be followed
     std::shared_ptr<VehicleModelInterface> vehicle_model_ptr_;    //!< @brief vehicle model for MPC
     std::string                            vehicle_model_type_;   //!< @brief vehicle model type for MPC
-    std::shared_ptr<QPSolverInterface>     qpsolver_ptr_;         //!< @brief qp solver for MPC
-    std::string                            output_interface_;     //!< @brief output command type
-    std::deque<double> input_buffer_;   //!< @brief control input (mpc_output) buffer for delay time conpemsation
+    // std::shared_ptr<QPSolverInterface>     qpsolver_ptr_;         //!< @brief qp solver for MPC
+    std::string        output_interface_;   //!< @brief output command type
+    std::deque<double> input_buffer_;       //!< @brief control input (mpc_output) buffer for delay time conpemsation
+
 
     /* parameters for control*/
     double ctrl_period_;                //!< @brief control frequency [s]
@@ -106,45 +136,48 @@ private:
         double zero_ff_steer_deg;                         //< @brief threshold that feed-forward angle becomes zero
         double delay_compensation_time;                   //< @brief delay time for steering input to be compensated
     };
-    MPCParam mpc_param_;                                  // for mpc design parameter
 
+    MPCParam mpc_param_;   // for mpc design parameter
     struct VehicleStatus
     {
-        std_msgs::Header     header;           //< @brief header
-        geometry_msgs::Pose  pose;             //< @brief vehicle pose
-        geometry_msgs::Twist twist;            //< @brief vehicle velocity
-        double               tire_angle_rad;   //< @brief vehicle tire angle
+        std_msgs::msg::Header     header;           //< @brief header
+        geometry_msgs::msg::Pose  pose;             //< @brief vehicle pose
+        geometry_msgs::msg::Twist twist;            //< @brief vehicle velocity
+        double                    tire_angle_rad;   //< @brief vehicle tire angle
     };
-    VehicleStatus vehicle_status_;             //< @brief vehicle status
 
-    double steer_cmd_prev_;                    //< @brief steering command calculated in previous period
-    double lateral_error_prev_;                //< @brief previous lateral error for derivative
-    double yaw_error_prev_;                    //< @brief previous lateral error for derivative
+    VehicleStatus vehicle_status_;   //< @brief vehicle status
+
+    double steer_cmd_prev_;          //< @brief steering command calculated in previous period
+    double lateral_error_prev_;      //< @brief previous lateral error for derivative
+    double yaw_error_prev_;          //< @brief previous lateral error for derivative
 
     /* flags */
     bool my_position_ok_;   //< @brief flag for validity of current pose
     bool my_velocity_ok_;   //< @brief flag for validity of current velocity
     bool my_steering_ok_;   //< @brief flag for validity of steering angle
 
+
     /**
    * @brief compute and publish control command for path follow with a constant control period
    */
-    void timerCallback(const ros::TimerEvent&);
+    void timerCallback();
 
     /**
    * @brief set current_waypoints_ with receved message
    */
-    void callbackRefPath(const autoware_msgs::Lane::ConstPtr&);
+    void callbackRefPath(const mpc_msgs::msg::Lane::ConstPtr&);
 
     /**
    * @brief set vehicle_status_.pose with receved message
    */
-    void callbackPose(const geometry_msgs::PoseStamped::ConstPtr&);
+    void callbackPose(const geometry_msgs::msg::PoseStamped::ConstPtr&);
+
 
     /**
    * @brief set vehicle_status_.twist and vehicle_status_.tire_angle_rad with receved message
    */
-    void callbackVehicleStatus(const autoware_msgs::VehicleStatus& msg);
+    void callbackVehicleStatus(const mpc_msgs::msg::VehicleStatus& msg);
 
     /**
    * @brief publish control command calculated by MPC
@@ -182,25 +215,35 @@ private:
    */
     bool calculateMPC(double& vel_cmd, double& acc_cmd, double& steer_cmd, double& steer_vel_cmd);
 
+
     /* debug */
-    bool show_debug_info_;                             //!< @brief flag to display debug info
+    bool show_debug_info_;   //!< @brief flag to display debug info
 
-    ros::Publisher pub_debug_filtered_traj_;           //!< @brief publisher for debug info
-    ros::Publisher pub_debug_predicted_traj_;          //!< @brief publisher for debug info
-    ros::Publisher pub_debug_values_;                  //!< @brief publisher for debug info
-    ros::Publisher pub_debug_mpc_calc_time_;           //!< @brief publisher for debug info
-
-    ros::Subscriber             sub_estimate_twist_;   //!< @brief subscriber for /estimate_twist for debug
-    geometry_msgs::TwistStamped estimate_twist_;       //!< @brief received /estimate_twist for debug
+    rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::Marker>::SharedPtr
+        debug_filtered_traj_publisher_;                            //!< @brief publisher for debug info
+    rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::Marker>::SharedPtr
+        debug_predicted_traj_publisher_;                           //!< @brief publisher for debug info
+    rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::Float64MultiArray>::SharedPtr
+        debug_values_publisher_;                                   //!< @brief publisher for debug info
+    rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::Float32>::SharedPtr
+        debug_mpc_calc_time_publisher_;                            //!< @brief publisher for debug info
+    rclcpp::Subscription<mpc_msgs::msg::VehicleStatus>::SharedPtr
+                                     estimate_twist_subscriber_;   //!< @brief subscriber for /estimate_twist for debug
+    geometry_msgs::msg::TwistStamped estimate_twist_;              //!< @brief received /estimate_twist for debug
 
     /**
    * @brief convert MPCTraj to visualizaton marker for visualization
    */
-    void convertTrajToMarker(
-        const MPCTrajectory& traj, visualization_msgs::Marker& markers, std::string ns, double r, double g, double b, double z);
+    void convertTrajToMarker(const MPCTrajectory&             traj,
+                             visualization_msgs::msg::Marker& markers,
+                             std::string                      ns,
+                             double                           r,
+                             double                           g,
+                             double                           b,
+                             double                           z);
 
     /**
    * @brief callback for estimate twist for debug
    */
-    void callbackEstimateTwist(const geometry_msgs::TwistStamped& msg) { estimate_twist_ = msg; }
+    void callbackEstimateTwist(const geometry_msgs::msg::TwistStamped& msg) { estimate_twist_ = msg; }
 };

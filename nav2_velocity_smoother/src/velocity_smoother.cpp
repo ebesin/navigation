@@ -41,8 +41,7 @@ VelocitySmoother::~VelocitySmoother()
     }
 }
 
-nav2_util::CallbackReturn VelocitySmoother::on_configure(
-    const rclcpp_lifecycle::State&)
+nav2_util::CallbackReturn VelocitySmoother::on_configure(const rclcpp_lifecycle::State&)
 {
     RCLCPP_INFO(get_logger(), "Configuring velocity smoother");
     auto        node = shared_from_this();
@@ -50,33 +49,18 @@ nav2_util::CallbackReturn VelocitySmoother::on_configure(
     double      velocity_timeout_dbl;
 
     // Smoothing metadata
-    declare_parameter_if_not_declared(
-        node, "smoothing_frequency", rclcpp::ParameterValue(20.0));
-    declare_parameter_if_not_declared(
-        node, "feedback", rclcpp::ParameterValue(std::string("OPEN_LOOP")));
-    declare_parameter_if_not_declared(
-        node, "scale_velocities", rclcpp::ParameterValue(false));
+    declare_parameter_if_not_declared(node, "smoothing_frequency", rclcpp::ParameterValue(20.0));
+    declare_parameter_if_not_declared(node, "feedback", rclcpp::ParameterValue(std::string("OPEN_LOOP")));
+    declare_parameter_if_not_declared(node, "scale_velocities", rclcpp::ParameterValue(false));
     node->get_parameter("smoothing_frequency", smoothing_frequency_);
     node->get_parameter("feedback", feedback_type);
     node->get_parameter("scale_velocities", scale_velocities_);
 
     // Kinematics
-    declare_parameter_if_not_declared(
-        node,
-        "max_velocity",
-        rclcpp::ParameterValue(std::vector<double>{0.50, 0.0, 2.5}));
-    declare_parameter_if_not_declared(
-        node,
-        "min_velocity",
-        rclcpp::ParameterValue(std::vector<double>{-0.50, 0.0, -2.5}));
-    declare_parameter_if_not_declared(
-        node,
-        "max_accel",
-        rclcpp::ParameterValue(std::vector<double>{2.5, 0.0, 3.2}));
-    declare_parameter_if_not_declared(
-        node,
-        "max_decel",
-        rclcpp::ParameterValue(std::vector<double>{-2.5, 0.0, -3.2}));
+    declare_parameter_if_not_declared(node, "max_velocity", rclcpp::ParameterValue(std::vector<double>{0.50, 0.0, 2.5}));
+    declare_parameter_if_not_declared(node, "min_velocity", rclcpp::ParameterValue(std::vector<double>{-0.50, 0.0, -2.5}));
+    declare_parameter_if_not_declared(node, "max_accel", rclcpp::ParameterValue(std::vector<double>{2.5, 0.0, 3.2}));
+    declare_parameter_if_not_declared(node, "max_decel", rclcpp::ParameterValue(std::vector<double>{-2.5, 0.0, -3.2}));
     node->get_parameter("max_velocity", max_velocities_);
     node->get_parameter("min_velocity", min_velocities_);
     node->get_parameter("max_accel", max_accels_);
@@ -91,28 +75,20 @@ nav2_util::CallbackReturn VelocitySmoother::on_configure(
     }
 
     // Get feature parameters
-    declare_parameter_if_not_declared(
-        node, "odom_topic", rclcpp::ParameterValue("odom"));
-    declare_parameter_if_not_declared(
-        node, "odom_duration", rclcpp::ParameterValue(0.1));
-    declare_parameter_if_not_declared(
-        node,
-        "deadband_velocity",
-        rclcpp::ParameterValue(std::vector<double>{0.0, 0.0, 0.0}));
-    declare_parameter_if_not_declared(
-        node, "velocity_timeout", rclcpp::ParameterValue(1.0));
+    declare_parameter_if_not_declared(node, "odom_topic", rclcpp::ParameterValue("odom"));
+    declare_parameter_if_not_declared(node, "odom_duration", rclcpp::ParameterValue(0.1));
+    declare_parameter_if_not_declared(node, "deadband_velocity", rclcpp::ParameterValue(std::vector<double>{0.0, 0.0, 0.0}));
+    declare_parameter_if_not_declared(node, "velocity_timeout", rclcpp::ParameterValue(1.0));
     node->get_parameter("odom_topic", odom_topic_);
     node->get_parameter("odom_duration", odom_duration_);
     node->get_parameter("deadband_velocity", deadband_velocities_);
     node->get_parameter("velocity_timeout", velocity_timeout_dbl);
     velocity_timeout_ = rclcpp::Duration::from_seconds(velocity_timeout_dbl);
 
-    if (max_velocities_.size() != 3 || min_velocities_.size() != 3 ||
-        max_accels_.size() != 3 || max_decels_.size() != 3 ||
+    if (max_velocities_.size() != 3 || min_velocities_.size() != 3 || max_accels_.size() != 3 || max_decels_.size() != 3 ||
         deadband_velocities_.size() != 3) {
-        throw std::runtime_error(
-            "Invalid setting of kinematic and/or deadband limits!"
-            " All limits must be size of 3 representing (x, y, theta).");
+        throw std::runtime_error("Invalid setting of kinematic and/or deadband limits!"
+                                 " All limits must be size of 3 representing (x, y, theta).");
     }
 
     // Get control type
@@ -121,47 +97,36 @@ nav2_util::CallbackReturn VelocitySmoother::on_configure(
     }
     else if (feedback_type == "CLOSED_LOOP") {
         open_loop_     = false;
-        odom_smoother_ = std::make_unique<nav2_util::OdomSmoother>(
-            node, odom_duration_, odom_topic_);
+        odom_smoother_ = std::make_unique<nav2_util::OdomSmoother>(node, odom_duration_, odom_topic_);
     }
     else {
-        throw std::runtime_error(
-            "Invalid feedback_type, options are OPEN_LOOP and CLOSED_LOOP.");
+        throw std::runtime_error("Invalid feedback_type, options are OPEN_LOOP and CLOSED_LOOP.");
     }
 
     // Setup inputs / outputs
-    smoothed_cmd_pub_ =
-        create_publisher<geometry_msgs::msg::Twist>("cmd_vel_smoothed", 1);
-    cmd_sub_ = create_subscription<geometry_msgs::msg::Twist>(
-        "cmd_vel",
-        rclcpp::QoS(1),
-        std::bind(&VelocitySmoother::inputCommandCallback,
-                  this,
-                  std::placeholders::_1));
+    smoothed_cmd_pub_ = create_publisher<geometry_msgs::msg::Twist>("cmd_vel_smoothed", 1);
+    cmd_sub_          = create_subscription<geometry_msgs::msg::Twist>(
+        "cmd_vel", rclcpp::QoS(1), std::bind(&VelocitySmoother::inputCommandCallback, this, std::placeholders::_1));
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn VelocitySmoother::on_activate(
-    const rclcpp_lifecycle::State&)
+nav2_util::CallbackReturn VelocitySmoother::on_activate(const rclcpp_lifecycle::State&)
 {
     RCLCPP_INFO(get_logger(), "Activating");
     smoothed_cmd_pub_->on_activate();
     double timer_duration_ms = 1000.0 / smoothing_frequency_;
-    timer_                   = create_wall_timer(
-        std::chrono::milliseconds(static_cast<int>(timer_duration_ms)),
-        std::bind(&VelocitySmoother::smootherTimer, this));
+    timer_                   = create_wall_timer(std::chrono::milliseconds(static_cast<int>(timer_duration_ms)),
+                               std::bind(&VelocitySmoother::smootherTimer, this));
 
-    dyn_params_handler_ = this->add_on_set_parameters_callback(
-        std::bind(&VelocitySmoother::dynamicParametersCallback, this, _1));
+    dyn_params_handler_ = this->add_on_set_parameters_callback(std::bind(&VelocitySmoother::dynamicParametersCallback, this, _1));
 
     // create bond connection
     createBond();
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn VelocitySmoother::on_deactivate(
-    const rclcpp_lifecycle::State&)
+nav2_util::CallbackReturn VelocitySmoother::on_deactivate(const rclcpp_lifecycle::State&)
 {
     RCLCPP_INFO(get_logger(), "Deactivating");
     if (timer_) {
@@ -176,8 +141,7 @@ nav2_util::CallbackReturn VelocitySmoother::on_deactivate(
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn VelocitySmoother::on_cleanup(
-    const rclcpp_lifecycle::State&)
+nav2_util::CallbackReturn VelocitySmoother::on_cleanup(const rclcpp_lifecycle::State&)
 {
     RCLCPP_INFO(get_logger(), "Cleaning up");
     smoothed_cmd_pub_.reset();
@@ -186,24 +150,19 @@ nav2_util::CallbackReturn VelocitySmoother::on_cleanup(
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn VelocitySmoother::on_shutdown(
-    const rclcpp_lifecycle::State&)
+nav2_util::CallbackReturn VelocitySmoother::on_shutdown(const rclcpp_lifecycle::State&)
 {
     RCLCPP_INFO(get_logger(), "Shutting down");
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
-void VelocitySmoother::inputCommandCallback(
-    const geometry_msgs::msg::Twist::SharedPtr msg)
+void VelocitySmoother::inputCommandCallback(const geometry_msgs::msg::Twist::SharedPtr msg)
 {
     command_           = msg;
     last_command_time_ = now();
 }
 
-double VelocitySmoother::findEtaConstraint(const double v_curr,
-                                           const double v_cmd,
-                                           const double accel,
-                                           const double decel)
+double VelocitySmoother::findEtaConstraint(const double v_curr, const double v_cmd, const double accel, const double decel)
 {
     // Exploiting vector scaling properties
     const double v_component_max = accel / smoothing_frequency_;
@@ -221,11 +180,8 @@ double VelocitySmoother::findEtaConstraint(const double v_curr,
     return -1.0;
 }
 
-double VelocitySmoother::applyConstraints(const double v_curr,
-                                          const double v_cmd,
-                                          const double accel,
-                                          const double decel,
-                                          const double eta)
+double VelocitySmoother::applyConstraints(
+    const double v_curr, const double v_cmd, const double accel, const double decel, const double eta)
 {
     double       dv              = v_cmd - v_curr;
     const double v_component_max = accel / smoothing_frequency_;
@@ -259,12 +215,9 @@ void VelocitySmoother::smootherTimer()
     }
 
     // Apply absolute velocity restrictions to the command
-    command_->linear.x =
-        std::clamp(command_->linear.x, min_velocities_[0], max_velocities_[0]);
-    command_->linear.y =
-        std::clamp(command_->linear.y, min_velocities_[1], max_velocities_[1]);
-    command_->angular.z =
-        std::clamp(command_->angular.z, min_velocities_[2], max_velocities_[2]);
+    command_->linear.x  = std::clamp(command_->linear.x, min_velocities_[0], max_velocities_[0]);
+    command_->linear.y  = std::clamp(command_->linear.y, min_velocities_[1], max_velocities_[1]);
+    command_->angular.z = std::clamp(command_->angular.z, min_velocities_[2], max_velocities_[2]);
 
     // Find if any component is not within the acceleration constraints. If so, store the most
     // significant scale factor to apply to the vector <dvx, dvy, dvw>, eta, to reduce all axes
@@ -275,49 +228,25 @@ void VelocitySmoother::smootherTimer()
     if (scale_velocities_) {
         double curr_eta = -1.0;
 
-        curr_eta = findEtaConstraint(current_.linear.x,
-                                     command_->linear.x,
-                                     max_accels_[0],
-                                     max_decels_[0]);
-        if (curr_eta > 0.0 &&
-            std::fabs(1.0 - curr_eta) > std::fabs(1.0 - eta)) {
+        curr_eta = findEtaConstraint(current_.linear.x, command_->linear.x, max_accels_[0], max_decels_[0]);
+        if (curr_eta > 0.0 && std::fabs(1.0 - curr_eta) > std::fabs(1.0 - eta)) {
             eta = curr_eta;
         }
 
-        curr_eta = findEtaConstraint(current_.linear.y,
-                                     command_->linear.y,
-                                     max_accels_[1],
-                                     max_decels_[1]);
-        if (curr_eta > 0.0 &&
-            std::fabs(1.0 - curr_eta) > std::fabs(1.0 - eta)) {
+        curr_eta = findEtaConstraint(current_.linear.y, command_->linear.y, max_accels_[1], max_decels_[1]);
+        if (curr_eta > 0.0 && std::fabs(1.0 - curr_eta) > std::fabs(1.0 - eta)) {
             eta = curr_eta;
         }
 
-        curr_eta = findEtaConstraint(current_.angular.z,
-                                     command_->angular.z,
-                                     max_accels_[2],
-                                     max_decels_[2]);
-        if (curr_eta > 0.0 &&
-            std::fabs(1.0 - curr_eta) > std::fabs(1.0 - eta)) {
+        curr_eta = findEtaConstraint(current_.angular.z, command_->angular.z, max_accels_[2], max_decels_[2]);
+        if (curr_eta > 0.0 && std::fabs(1.0 - curr_eta) > std::fabs(1.0 - eta)) {
             eta = curr_eta;
         }
     }
 
-    cmd_vel->linear.x  = applyConstraints(current_.linear.x,
-                                         command_->linear.x,
-                                         max_accels_[0],
-                                         max_decels_[0],
-                                         eta);
-    cmd_vel->linear.y  = applyConstraints(current_.linear.y,
-                                         command_->linear.y,
-                                         max_accels_[1],
-                                         max_decels_[1],
-                                         eta);
-    cmd_vel->angular.z = applyConstraints(current_.angular.z,
-                                          command_->angular.z,
-                                          max_accels_[2],
-                                          max_decels_[2],
-                                          eta);
+    cmd_vel->linear.x  = applyConstraints(current_.linear.x, command_->linear.x, max_accels_[0], max_decels_[0], eta);
+    cmd_vel->linear.y  = applyConstraints(current_.linear.y, command_->linear.y, max_accels_[1], max_decels_[1], eta);
+    cmd_vel->angular.z = applyConstraints(current_.angular.z, command_->angular.z, max_accels_[2], max_decels_[2], eta);
 
     // If open loop, assume we achieved it
     if (open_loop_) {
@@ -325,21 +254,13 @@ void VelocitySmoother::smootherTimer()
     }
 
     // Apply deadband restrictions & publish
-    cmd_vel->linear.x  = fabs(cmd_vel->linear.x) < deadband_velocities_[0]
-                             ? 0.0
-                             : cmd_vel->linear.x;
-    cmd_vel->linear.y  = fabs(cmd_vel->linear.y) < deadband_velocities_[1]
-                             ? 0.0
-                             : cmd_vel->linear.y;
-    cmd_vel->angular.z = fabs(cmd_vel->angular.z) < deadband_velocities_[2]
-                             ? 0.0
-                             : cmd_vel->angular.z;
+    cmd_vel->linear.x  = fabs(cmd_vel->linear.x) < deadband_velocities_[0] ? 0.0 : cmd_vel->linear.x;
+    cmd_vel->linear.y  = fabs(cmd_vel->linear.y) < deadband_velocities_[1] ? 0.0 : cmd_vel->linear.y;
+    cmd_vel->angular.z = fabs(cmd_vel->angular.z) < deadband_velocities_[2] ? 0.0 : cmd_vel->angular.z;
     smoothed_cmd_pub_->publish(std::move(cmd_vel));
 }
 
-rcl_interfaces::msg::SetParametersResult
-VelocitySmoother::dynamicParametersCallback(
-    std::vector<rclcpp::Parameter> parameters)
+rcl_interfaces::msg::SetParametersResult VelocitySmoother::dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters)
 {
     rcl_interfaces::msg::SetParametersResult result;
     result.successful = true;
@@ -357,26 +278,20 @@ VelocitySmoother::dynamicParametersCallback(
                 }
 
                 double timer_duration_ms = 1000.0 / smoothing_frequency_;
-                timer_                   = create_wall_timer(
-                    std::chrono::milliseconds(
-                        static_cast<int>(timer_duration_ms)),
-                    std::bind(&VelocitySmoother::smootherTimer, this));
+                timer_                   = create_wall_timer(std::chrono::milliseconds(static_cast<int>(timer_duration_ms)),
+                                           std::bind(&VelocitySmoother::smootherTimer, this));
             }
             else if (name == "velocity_timeout") {
-                velocity_timeout_ =
-                    rclcpp::Duration::from_seconds(parameter.as_double());
+                velocity_timeout_ = rclcpp::Duration::from_seconds(parameter.as_double());
             }
             else if (name == "odom_duration") {
                 odom_duration_ = parameter.as_double();
-                odom_smoother_ = std::make_unique<nav2_util::OdomSmoother>(
-                    shared_from_this(), odom_duration_, odom_topic_);
+                odom_smoother_ = std::make_unique<nav2_util::OdomSmoother>(shared_from_this(), odom_duration_, odom_topic_);
             }
         }
         else if (type == ParameterType::PARAMETER_DOUBLE_ARRAY) {
             if (parameter.as_double_array().size() != 3) {
-                RCLCPP_WARN(get_logger(),
-                            "Invalid size of parameter %s. Must be size 3",
-                            name.c_str());
+                RCLCPP_WARN(get_logger(), "Invalid size of parameter %s. Must be size 3", name.c_str());
                 result.successful = false;
                 break;
             }
@@ -405,8 +320,7 @@ VelocitySmoother::dynamicParametersCallback(
                 }
                 else if (parameter.as_string() == "CLOSED_LOOP") {
                     open_loop_     = false;
-                    odom_smoother_ = std::make_unique<nav2_util::OdomSmoother>(
-                        shared_from_this(), odom_duration_, odom_topic_);
+                    odom_smoother_ = std::make_unique<nav2_util::OdomSmoother>(shared_from_this(), odom_duration_, odom_topic_);
                 }
                 else {
                     RCLCPP_WARN(get_logger(),
@@ -418,8 +332,7 @@ VelocitySmoother::dynamicParametersCallback(
             }
             else if (name == "odom_topic") {
                 odom_topic_    = parameter.as_string();
-                odom_smoother_ = std::make_unique<nav2_util::OdomSmoother>(
-                    shared_from_this(), odom_duration_, odom_topic_);
+                odom_smoother_ = std::make_unique<nav2_util::OdomSmoother>(shared_from_this(), odom_duration_, odom_topic_);
             }
         }
     }

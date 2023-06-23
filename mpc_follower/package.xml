@@ -13,5 +13,10 @@
     <build_type>ament_cmake</build_type>
   </export>
   <!-- <depend>OsqpEigen</depend> -->
+  <depend>rclcpp</depend>
   <depend>mpc_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>osqp_vendor</depend>
+  <depend>eigen</depend>
 </package>

@@ -19,6 +19,7 @@
   <depend>nav2_util</depend>
   <depend>navigation2</depend>
   <depend>nav2_core</depend>
+  <depend>nav2_smac_planner</depend>
   <depend>ompl</depend>
   <depend>angles</depend>
   <export>
