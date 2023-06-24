@@ -1,13 +1,13 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-20
- * @LastEditTime : 2023-06-20
+ * @LastEditTime : 2023-06-23
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
  */
 
-#include "mpc_follower/mpc_follower_core.h"
+#include "mpc_follower/mpc_follower_node.hpp"
 #define DEBUG_INFO(...)            \
     {                              \
         if (show_debug_info_) {    \

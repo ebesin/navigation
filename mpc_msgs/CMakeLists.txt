@@ -35,6 +35,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Float32MultiArrayStamped.msg"
   "msg/MultiArrayLayout.msg"
   "msg/MultiArrayDimension.msg"
+  "msg/VehicleStatus.msg"
+  "msg/PathPointWithLaneId.msg"
+  "msg/PathWithLaneId.msg"
   DEPENDENCIES geometry_msgs std_msgs # Add packages that above messages depend on, in this case geometry_msgs for Sphere.msg
 )
 

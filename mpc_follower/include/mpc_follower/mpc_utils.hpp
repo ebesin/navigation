@@ -1,58 +1,43 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-19
- * @LastEditTime : 2023-06-21
+ * @LastEditTime : 2023-06-23
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
  */
 
-#pragma once
+#ifndef MPC_LATERAL_CONTROLLER__MPC_UTILS_HPP_
+#define MPC_LATERAL_CONTROLLER__MPC_UTILS_HPP_
 
-#include "mpc_follower/mpc_trajectory.h"
 #include "rclcpp/rclcpp.hpp"
-#include <amathutils_lib/amathutils.hpp>
+#include "tf2/utils.h"
+
+#include <Eigen/Core>
+
+#ifdef ROS_DISTRO_GALACTIC
+#    include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#else
+#    include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#endif
+
+#include "mpc_trajectory.hpp"
+
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "geometry_msgs/msg/twist_stamped.hpp"
+#include "mpc_msgs/msg/trajectory.hpp"
+#include "mpc_msgs/msg/trajectory_point.hpp"
+
 #include <cmath>
-#include <eigen3/Eigen/Core>
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <geometry_msgs/msg/twist_stamped.h>
-#include <mpc_msgs/mpc_msgs/msg/lane.hpp>
-#include <std_msgs/msg/float64_multi_array.hpp>
-#include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <string>
+#include <utility>
 #include <vector>
 
-#ifndef MPC_LATERAL_CONTROLLER__MPC_UTILS_HPP_
-#    define MPC_LATERAL_CONTROLLER__MPC_UTILS_HPP_
 
-#    include "rclcpp/rclcpp.hpp"
-#    include "tf2/utils.h"
-
-#    include <Eigen/Core>
-
-#    ifdef ROS_DISTRO_GALACTIC
-#        include "tf2_geometry_msgs/tf2_geometry_msgs.h"
-#    else
-#        include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
-#    endif
-
-#    include "mpc_msgs/mpc_trajectory.hpp"
-
-#    include "geometry_msgs/msg/pose_stamped.hpp"
-#    include "geometry_msgs/msg/twist_stamped.hpp"
-#    include "mpc_msgs/msg/trajectory.hpp"
-#    include "mpc_msgs/msg/trajectory_point.hpp"
-
-#    include <cmath>
-#    include <string>
-#    include <utility>
-#    include <vector>
-
-namespace autoware::motion::control::mpc_lateral_controller {
 namespace MPCUtils {
 
-using autoware_auto_planning_msgs::msg::Trajectory;
-using autoware_auto_planning_msgs::msg::TrajectoryPoint;
+using mpc_msgs::msg::Trajectory;
+using mpc_msgs::msg::TrajectoryPoint;
 using geometry_msgs::msg::Pose;
 
 /**
@@ -220,5 +205,4 @@ template<typename T> void update_param(const std::vector<rclcpp::Parameter>& par
 }
 
 }   // namespace MPCUtils
-}   // namespace autoware::motion::control::mpc_lateral_controller
 #endif   // MPC_LATERAL_CONTROLLER__MPC_UTILS_HPP_

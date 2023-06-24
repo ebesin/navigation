@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-17
- * @LastEditTime : 2023-06-21
+ * @LastEditTime : 2023-06-23
  * @Description  : vehicle model class of bicycle kinematics without steering delay
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -32,7 +32,7 @@
  */
 
 #pragma once
-#include "mpc_follower/vehicle_model/vehicle_model_interface.h"
+#include "mpc_follower/vehicle_model/vehicle_model_interface.hpp"
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/LU>
 

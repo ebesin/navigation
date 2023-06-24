@@ -23,12 +23,10 @@ find_package(nav2_util REQUIRED)
 find_package(navigation2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 
-
 # 设置头文件相对路径
 include_directories(
   include
 )
-
 
 # 编译可执行文件
 set(executable_name dwayne_nav)
@@ -64,14 +62,12 @@ ament_target_dependencies(${executable_name}
   ${dependencies}
 )
 
-
 # 链接
 target_link_libraries(${executable_name} ${library_name})
 
 # target_include_directories(dwayne_nav PUBLIC
-#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#   $<INSTALL_INTERFACE:include>)
-
+# $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+# $<INSTALL_INTERFACE:include>)
 install(TARGETS ${executable_name}
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
@@ -83,7 +79,8 @@ install(DIRECTORY include/
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY params DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY map DESTINATION share/${PROJECT_NAME})
-install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
+
+# install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY worlds DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY rviz DESTINATION share/${PROJECT_NAME})
 
@@ -92,6 +89,4 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-
 ament_package()
-

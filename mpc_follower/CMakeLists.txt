@@ -13,6 +13,14 @@ find_package(mpc_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(osqp REQUIRED)
 find_package(osqp_vendor REQUIRED)
+find_package(tier4_debug_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
+find_package(unique_identifier_msgs REQUIRED)
+find_package(PCL REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 get_target_property(OSQP_INCLUDE_SUB_DIR osqp::osqp INTERFACE_INCLUDE_DIRECTORIES)
 get_filename_component(OSQP_INCLUDE_DIR ${OSQP_INCLUDE_SUB_DIR} PATH)
 
@@ -20,6 +28,7 @@ include_directories(
   include
 )
 
+# ###############################################################################
 # ##############
 # OSQP_INTERFACE
 # ##############
@@ -48,6 +57,167 @@ set(OSQP_DEPENDENCIES
 # 链接库和依赖
 ament_target_dependencies(${osqp_library_name}
   ${OSQP_DEPENDENCIES}
+)
+
+# ###############################################################################
+# ##############
+# VEHICLE_MODEL
+# ##############
+set(vehicle_model_library_name vehicle_model_lib CACHE INTERNAL "library")
+set(VEHICLE_MODEL_LIB_SRC
+  src/mpc_follower/vehicle_model/vehicle_model_bicycle_kinematics_no_delay.cpp
+  src/mpc_follower/vehicle_model/vehicle_model_interface.cpp
+)
+add_library(${vehicle_model_library_name} SHARED
+  ${VEHICLE_MODEL_LIB_SRC}
+)
+target_include_directories(${vehicle_model_library_name}
+  SYSTEM PUBLIC
+  "${EIGEN3_INCLUDE_DIR}"
+)
+set(VEHICLE_MODEL_DEPENDENCIES
+  Eigen3
+)
+ament_target_dependencies(${vehicle_model_library_name}
+  ${VEHICLE_MODEL_DEPENDENCIES}
+)
+
+# ###############################################################################
+# ##############
+# OSQP_SOLVER
+# ##############
+set(osqp_solver_library_name osqp_solver_lib CACHE INTERNAL "library")
+set(OSQP_SOLVER_LIB_SRC
+  src/qp_solver/qp_solver_osqp.cpp
+  src/qp_solver/qp_solver_unconstr_fast.cpp
+)
+add_library(${osqp_solver_library_name} SHARED
+  ${OSQP_SOLVER_LIB_SRC}
+)
+set(OSQP_SOLVER_DEPENDENCIES
+  rclcpp
+  Eigen3
+)
+ament_target_dependencies(${vehicle_model_library_name}
+  ${OSQP_SOLVER_DEPENDENCIES}
+)
+target_link_libraries(${osqp_solver_library_name} ${osqp_library_name})
+
+# ###############################################################################
+# ##############
+# MPC_UTILS
+# ##############
+set(mpc_utils_library_name mpc_utils_lib CACHE INTERNAL "library")
+set(MPC_UTILS_LIB_SRC
+  src/mpc_utils/mpc_utils.cpp
+  src/mpc_utils/math/sin_table.cpp
+  src/mpc_utils/math/trigonometry.cpp
+  src/mpc_utils/ros/msg_operation.cpp
+)
+add_library(${mpc_utils_library_name} SHARED
+  ${MPC_UTILS_LIB_SRC}
+)
+set(MPC_UTILS_DEPENDENCIES
+  rclcpp
+  Eigen3
+  mpc_msgs
+  geometry_msgs
+  nav_msgs
+  tier4_debug_msgs
+  visualization_msgs
+  diagnostic_msgs
+  unique_identifier_msgs
+  PCL
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
+ament_target_dependencies(${mpc_utils_library_name}
+  ${MPC_UTILS_DEPENDENCIES}
+)
+
+# ###############################################################################
+# ##############
+# INTERPOLATION
+# ##############
+set(interpolation_library_name interpolation_lib CACHE INTERNAL "library")
+set(INTERPOLATION_LIB_SRC
+  src/interpolation/linear_interpolation.cpp
+  src/interpolation/spline_interpolation.cpp
+  src/interpolation/spline_interpolation_points_2d.cpp
+  src/interpolation/spherical_linear_interpolation.cpp
+)
+add_library(${interpolation_library_name} SHARED
+  ${INTERPOLATION_LIB_SRC}
+)
+set(INTERPOLATION_DEPENDENCIES
+  geometry_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
+ament_target_dependencies(${interpolation_library_name}
+  ${INTERPOLATION_DEPENDENCIES}
+)
+target_link_libraries(${interpolation_library_name} ${mpc_utils_library_name})
+
+# ###############################################################################
+# ##############
+# MOTION_UTILS
+# ##############
+find_package(Boost REQUIRED)
+set(motion_utils_library_name motion_utils_lib CACHE INTERNAL "library")
+set(MOTION_UTILS_LIB_SRC
+  src/motion_utils/motion_utils.cpp
+  src/motion_utils/distance/distance.cpp
+  src/motion_utils/marker/marker_helper.cpp
+  src/motion_utils/marker/virtual_wall_marker_creator.cpp
+  src/motion_utils/resample/resample.cpp
+  src/motion_utils/trajectory/interpolation.cpp
+  src/motion_utils/trajectory/path_with_lane_id.cpp
+  src/motion_utils/vehicle/vehicle_state_checker.cpp
+)
+add_library(${motion_utils_library_name} SHARED
+  ${MOTION_UTILS_LIB_SRC}
+)
+set(MOTION_UTILS_DEPENDENCIES
+  geometry_msgs
+  visualization_msgs
+  mpc_msgs
+  rclcpp
+  rclcpp
+  nav_msgs
+)
+ament_target_dependencies(${motion_utils_library_name}
+  ${MOTION_UTILS_DEPENDENCIES}
+)
+target_link_libraries(${motion_utils_library_name}
+  ${mpc_utils_library_name}
+  ${interpolation_library_name}
+)
+
+# ###############################################################################
+
+# ##############
+# MPC
+# ##############
+set(mpc_library_name mpc_lib CACHE INTERNAL "library")
+set(MPC_LIB_SRC
+  src/mpc_follower/lowpass_filter.cpp
+  src/mpc_follower/mpc_trajectory.cpp
+  src/mpc_follower/mpc_utils.cpp
+  src/mpc_follower/steering_predictor.cpp
+  src/mpc_follower/mpc.cpp
+)
+add_library(${mpc_library_name} SHARED
+  ${MPC_LIB_SRC}
+)
+target_link_libraries(${mpc_library_name}
+  ${mpc_utils_library_name}
+  ${interpolation_library_name}
+  ${motion_utils_library_name}
+  ${osqp_library_name}
+  ${vehicle_model_library_name}
 )
 
 # uncomment the following section in order to fill in
