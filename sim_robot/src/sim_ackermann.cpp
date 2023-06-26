@@ -18,7 +18,7 @@ SimAckermann::SimAckermann(std::string name)
     origin_x_       = get_parameter("origin_x").as_double();
     origin_y_       = get_parameter("origin_y").as_double();
     origin_phi_     = get_parameter("origin_phi").as_double();
-    pub_period_     = get_parameter("pub_period").as_int();
+    pub_period_     = get_parameter("pub_period").as_double();
     min_sim_time_   = get_parameter("min_sim_time").as_double();
     wheel_base_     = get_parameter("wheel_base").as_double();
     cmd_sub_topic_  = get_parameter("cmd_sub_topic").as_string();
@@ -57,8 +57,10 @@ void SimAckermann::cmdCallback(const geometry_msgs::msg::Twist::SharedPtr cmd)
 
 void SimAckermann::timerCallback()
 {
+    // RCLCPP_INFO(get_logger(), "timer callback");
     nav_msgs::msg::Odometry odom;
-    odom.header.frame_id       = "odom";
+    odom.header.frame_id       = "map";
+    odom.child_frame_id        = "odom";
     odom.pose.pose.position.x  = current_state_ptr_->x_;
     odom.pose.pose.position.y  = current_state_ptr_->y_;
     odom.pose.pose.orientation = createQuaternionMsgFromYaw(current_state_ptr_->phi_);
@@ -79,7 +81,7 @@ void SimAckermann::declareParameter()
     declare_parameter("origin_x", 0.0);
     declare_parameter("origin_y", 0.0);
     declare_parameter("origin_phi", 0.0);
-    declare_parameter("pub_period", 20);
+    declare_parameter("pub_period", 0.02);
     declare_parameter("min_sim_time", 0.001);
     declare_parameter("wheel_base", 0.5);
     declare_parameter("cmd_sub_topic", "cmd_vel");

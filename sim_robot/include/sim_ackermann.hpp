@@ -34,7 +34,7 @@ private:
     double      origin_x_;         //初始点x
     double      origin_y_;         //初始点y
     double      origin_phi_;       //初始航向
-    int         pub_period_;       //机器人状态发布间隔
+    double      pub_period_;       //机器人状态发布间隔
     double      min_sim_time_;     //最小仿真时间
     double      wheel_base_;       //机器人轴距
     std::string cmd_sub_topic_;    //控制指令接收话题名
