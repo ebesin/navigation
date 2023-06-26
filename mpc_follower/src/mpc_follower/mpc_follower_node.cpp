@@ -7,7 +7,7 @@
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
  */
 
-#include "mpc_follower/mpc_follower_node.hpp"
+#include "mpc_follower/mpc_follower_node.hpp"s
 #define DEBUG_INFO(...)            \
     {                              \
         if (show_debug_info_) {    \

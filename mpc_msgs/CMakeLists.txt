@@ -38,6 +38,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/VehicleStatus.msg"
   "msg/PathPointWithLaneId.msg"
   "msg/PathWithLaneId.msg"
+  "msg/VehicleOdometry.msg"
+  "msg/OperationModeState.msg"
   DEPENDENCIES geometry_msgs std_msgs # Add packages that above messages depend on, in this case geometry_msgs for Sphere.msg
 )
 
