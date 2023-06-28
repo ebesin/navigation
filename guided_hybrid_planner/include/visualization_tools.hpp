@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-04-21
- * @LastEditTime : 2023-04-23
+ * @LastEditTime : 2023-06-27
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -9,7 +9,8 @@
 
 #include "geometry_msgs/msg/point.hpp"
 #include "nav2_util/lifecycle_node.hpp"
-#include "nav2_util/node_utils.hpp"
+// #include "nav2_util/node_utils.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "type.hpp"
 #include "visualization_msgs/msg/marker.hpp"
@@ -50,6 +51,8 @@ public:
    */
     nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State& state) override;
 
+    void odomCallback(const nav_msgs::msg::Odometry::SharedPtr odom);
+
     void add_point_pair(Vec2d first, Vec2d second);
 
     void publish_point_pairs();
@@ -63,6 +66,8 @@ private:
     VectorVec4d                                                                      point_pairs_;
     rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::Marker>::SharedPtr serch_tree_publisher_;
     visualization_msgs::msg::Marker                                                  tree_list_;
+    visualization_msgs::msg::Marker                                                  odom_robot_marker_;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr                         odom_subscriber_;
 };
 
 

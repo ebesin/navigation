@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-26
- * @LastEditTime : 2023-06-26
+ * @LastEditTime : 2023-06-27
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -13,6 +13,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
+
+namespace sim_robot {
 class SimAckermann : public rclcpp::Node
 {
 private:
@@ -71,3 +73,4 @@ public:
     SimAckermann(std::string name);
     ~SimAckermann();
 };
+}   // namespace sim_robot

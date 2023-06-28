@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-04-21
- * @LastEditTime : 2023-05-28
+ * @LastEditTime : 2023-06-27
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -22,6 +22,8 @@ nav2_util::CallbackReturn VisualizationTools::on_configure(const rclcpp_lifecycl
     RCLCPP_INFO(get_logger(), "Configuring");
 
     serch_tree_publisher_ = create_publisher<visualization_msgs::msg::Marker>("serch_tree", 1);
+    odom_subscriber_      = create_subscription<nav_msgs::msg::Odometry>(
+        "odom", rclcpp::SystemDefaultsQoS(), std::bind(&VisualizationTools::odomCallback, this, std::placeholders::_1));
     return nav2_util::CallbackReturn::SUCCESS;
 }
 

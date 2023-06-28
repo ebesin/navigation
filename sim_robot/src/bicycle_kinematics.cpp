@@ -9,6 +9,7 @@
 
 
 #include "bicycle_kinematics.hpp"
+#include <iostream>
 
 using namespace sim_robot;
 
@@ -21,16 +22,18 @@ void BicycleKinematics::calKinematics(BicycleKinematics::State&           curren
                                       const BicycleKinematics::CtrlInput& u,
                                       const rclcpp::Duration              sim_time)
 {
-    rclcpp::Duration time = rclcpp::Duration::from_nanoseconds(0);
+    auto             deg2rad = [](double deg) { return deg / 180 * M_PI; };
+    rclcpp::Duration time    = rclcpp::Duration::from_nanoseconds(0);
+    std::cout << "sim_time: " << sim_time.seconds() << std::endl;
     while (time < sim_time) {
         double time_interval = min_sim_time_.seconds();
-        current_state        = current_state + State(current_state.x_ * cos(current_state.phi_) * time_interval,
-                                              current_state.y_ * sin(current_state.phi_) * time_interval,
-                                              u.v / wheel_base_ * tan(u.delta) * time_interval);
+        current_state        = current_state + State(u.v * cos(current_state.phi_) * time_interval,
+                                              u.v * sin(current_state.phi_) * time_interval,
+                                              u.v / wheel_base_ * tan((u.delta)) * time_interval);
         time                 = time + min_sim_time_;
     }
     double time_interval = (sim_time - (time - sim_time)).seconds();
-    current_state        = current_state + State(current_state.x_ * cos(current_state.phi_) * time_interval,
-                                          current_state.y_ * sin(current_state.phi_) * time_interval,
-                                          u.v / wheel_base_ * tan(u.delta) * time_interval);
+    current_state        = current_state + State(u.v * cos(current_state.phi_) * time_interval,
+                                          u.v * sin(current_state.phi_) * time_interval,
+                                          u.v / wheel_base_ * tan((u.delta)) * time_interval);
 }

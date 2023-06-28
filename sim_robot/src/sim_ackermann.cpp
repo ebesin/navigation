@@ -1,14 +1,14 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-26
- * @LastEditTime : 2023-06-26
+ * @LastEditTime : 2023-06-27
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
  */
 
 #include "sim_ackermann.hpp"
-
+namespace sim_robot {
 
 SimAckermann::SimAckermann(std::string name)
     : Node(name)
@@ -43,6 +43,8 @@ SimAckermann::~SimAckermann() {}
 
 void SimAckermann::cmdCallback(const geometry_msgs::msg::Twist::SharedPtr cmd)
 {
+    if (std::abs(cmd->angular.z) > 0.4363) cmd->angular.z = cmd->angular.z > 0 ? 0.4363 : -0.4363;
+
     current_cmd_ptr_ = cmd;
     if (!is_init_) {
         last_time_ = get_clock()->now();
@@ -51,8 +53,14 @@ void SimAckermann::cmdCallback(const geometry_msgs::msg::Twist::SharedPtr cmd)
     }
     current_time_                  = get_clock()->now();
     rclcpp::Duration time_interval = current_time_ - last_time_;
+    if (time_interval > rclcpp::Duration::from_seconds(0.1)) {
+        RCLCPP_WARN(get_logger(), "%fs has passed since the last command was received", time_interval.seconds());
+        last_time_ = get_clock()->now();
+        return;
+    }
     simulator_ptr_->calKinematics(
         *current_state_ptr_, sim_robot::BicycleKinematics::CtrlInput(cmd->linear.x, cmd->angular.z), time_interval);
+    last_time_ = current_time_;
 }
 
 void SimAckermann::timerCallback()
@@ -66,6 +74,8 @@ void SimAckermann::timerCallback()
     odom.pose.pose.orientation = createQuaternionMsgFromYaw(current_state_ptr_->phi_);
     odom.twist.twist           = *current_cmd_ptr_;
     odom.twist.twist.angular.z = current_cmd_ptr_->linear.x / wheel_base_ * tan(current_cmd_ptr_->angular.z);
+    // RCLCPP_INFO_STREAM(get_logger(),
+    //                    "x: " << current_state_ptr_->x_ << " y:" << current_state_ptr_->y_ << " phi:" << current_state_ptr_->phi_);
     odom_publisher_->publish(odom);
 }
 
@@ -83,7 +93,9 @@ void SimAckermann::declareParameter()
     declare_parameter("origin_phi", 0.0);
     declare_parameter("pub_period", 0.02);
     declare_parameter("min_sim_time", 0.001);
-    declare_parameter("wheel_base", 0.5);
+    declare_parameter("wheel_base", 0.65);
     declare_parameter("cmd_sub_topic", "cmd_vel");
     declare_parameter("odom_pub_toipc", "odom");
 }
+
+}   // namespace sim_robot

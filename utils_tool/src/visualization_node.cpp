@@ -1,19 +1,18 @@
 /*
  * @Author       : dwayne
- * @Date         : 2023-06-26
+ * @Date         : 2023-06-27
  * @LastEditTime : 2023-06-27
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
  */
 
-#include "rclcpp/rclcpp.hpp"
-#include "sim_ackermann.hpp"
+#include "visualization_tool.hpp"
 
 int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<sim_robot::SimAckermann>("sim_ackermann"));
+    rclcpp::spin(std::make_shared<utils_tool::VisualizationTools>("visualization_tool"));
     rclcpp::shutdown();
     return 0;
 }
