@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-26
- * @LastEditTime : 2023-06-27
+ * @LastEditTime : 2023-06-28
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -33,6 +33,16 @@ SimAckermann::SimAckermann(std::string name)
     cmd_subscriber_ = create_subscription<geometry_msgs::msg::Twist>(
         "cmd_vel", rclcpp::SystemDefaultsQoS(), std::bind(&SimAckermann::cmdCallback, this, std::placeholders::_1));
     odom_publisher_ = create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::SystemDefaultsQoS());
+
+    current_odom_publisher_ =
+        create_publisher<nav_msgs::msg::Odometry>("/mpc_controller/input/current_odometry", rclcpp::SystemDefaultsQoS());
+    current_accel_publisher_ = create_publisher<geometry_msgs::msg::AccelWithCovarianceStamped>(
+        "/mpc_controller/input/current_accel", rclcpp::SystemDefaultsQoS());
+    current_operation_mode_publisher_ = create_publisher<mpc_msgs::msg::OperationModeState>(
+        "/mpc_controller/input/current_operation_mode", rclcpp::SystemDefaultsQoS());
+    current_steering_publisher_ =
+        create_publisher<mpc_msgs::msg::SteeringReport>("/mpc_controller/input/current_steering", rclcpp::SystemDefaultsQoS());
+
     /*initialize timer*/
     const auto period_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(pub_period_));
     pub_timer            = create_wall_timer(period_ns, std::bind(&SimAckermann::timerCallback, this));
@@ -77,6 +87,15 @@ void SimAckermann::timerCallback()
     // RCLCPP_INFO_STREAM(get_logger(),
     //                    "x: " << current_state_ptr_->x_ << " y:" << current_state_ptr_->y_ << " phi:" << current_state_ptr_->phi_);
     odom_publisher_->publish(odom);
+    current_odom_publisher_->publish(odom);
+    geometry_msgs::msg::AccelWithCovarianceStamped accel;
+    current_accel_publisher_->publish(accel);
+    mpc_msgs::msg::OperationModeState oms;
+    oms.is_autonomous_mode_available = true;
+    current_operation_mode_publisher_->publish(oms);
+    mpc_msgs::msg::SteeringReport sr;
+    sr.steering_tire_angle = current_cmd_ptr_->angular.z;
+    current_steering_publisher_->publish(sr);
 }
 
 geometry_msgs::msg::Quaternion SimAckermann::createQuaternionMsgFromYaw(double yaw)

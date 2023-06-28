@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-04
- * @LastEditTime : 2023-06-08
+ * @LastEditTime : 2023-06-28
  * @Description  :
  *
  * Copyright (c) 2023 by dwayne, All Rights Reserved.
@@ -42,28 +42,28 @@ void setTraj(float traj[][4], float first_goal_x, float first_goal_y, float dire
 
 int main()
 {
-    // CoorTools::WGS84 origin(121.0304800, 30.92736924, 0);
-    // CoorTools::WGS84 target(121.0302343, 30.92589333, 0);
+    // utils_tool::WGS84 origin(121.0304800, 30.92736924, 0);
+    // utils_tool::WGS84 target(121.0302343, 30.92589333, 0);
     // 院子纵向
-    // CoorTools::WGS84 origin(121.0329400, 30.9292135, 0);
-    // CoorTools::WGS84 target(121.0329354, 30.9290759, 0);
+    // utils_tool::WGS84 origin(121.0329400, 30.9292135, 0);
+    // utils_tool::WGS84 target(121.0329354, 30.9290759, 0);
     // // 四号田
-    // CoorTools::WGS84 origin(121.0337227, 30.9289874, 0);
-    // CoorTools::WGS84 target(121.0337678, 30.9296207, 0);
+    // utils_tool::WGS84 origin(121.0337227, 30.9289874, 0);
+    // utils_tool::WGS84 target(121.0337678, 30.9296207, 0);
     // // // 四号田
-    // CoorTools::WGS84 origin(121.0335637, 30.9290215, 0);
-    // CoorTools::WGS84 target(121.0336024, 30.9295840, 0);
+    // utils_tool::WGS84 origin(121.0335637, 30.9290215, 0);
+    // utils_tool::WGS84 target(121.0336024, 30.9295840, 0);
     // // // 四号田
-    // CoorTools::WGS84 origin(121.0337310, 30.9290158, 0);
-    // CoorTools::WGS84 target(121.0337719, 30.9295823, 0);
+    // utils_tool::WGS84 origin(121.0337310, 30.9290158, 0);
+    // utils_tool::WGS84 target(121.0337719, 30.9295823, 0);
     // // // 四号田
-    CoorTools::WGS84 origin(121.0336336, 30.9295960, 0);
-    CoorTools::WGS84 target(121.0337631, 30.9295971, 0);
+    utils_tool::WGS84 origin(121.0336336, 30.9295960, 0);
+    utils_tool::WGS84 target(121.0337631, 30.9295971, 0);
     // 院子横向
-    // CoorTools::WGS84 origin(121.0327009, 30.9292545, 0);
-    // CoorTools::WGS84 target(121.0329049, 30.9292493, 0);
+    // utils_tool::WGS84 origin(121.0327009, 30.9292545, 0);
+    // utils_tool::WGS84 target(121.0329049, 30.9292493, 0);
 
-    CoorTools::ENU enu = CoorTools::wgs84ToEnu(origin, target);
+    utils_tool::ENU enu = utils_tool::wgs84ToEnu(origin, target);
     std::cout << " enu.getXEast():" << enu.getXEast() << "  enu.getYNorth():" << enu.getYNorth() << std::endl;
 
     std::cout << "航向角: "
@@ -78,9 +78,9 @@ int main()
     double distance = 290;
     // double distance  = sqrt(enu.getXEast() * enu.getXEast() +
     //                        enu.getYNorth() * enu.getYNorth());
-    double theta_rad = CoorTools::angle2Radian(theta);
-    std::cout << "x:" << distance * std::cos(CoorTools::angle2Radian(theta))
-              << "\ty:" << distance * std::sin(CoorTools::angle2Radian(theta)) << std::endl;
+    double theta_rad = utils_tool::angle2Radian(theta);
+    std::cout << "x:" << distance * std::cos(utils_tool::angle2Radian(theta))
+              << "\ty:" << distance * std::sin(utils_tool::angle2Radian(theta)) << std::endl;
 
     float traj[10][4];
     setTraj(traj, 10.0f, 0.0f, -90.0 / 180.0 * M_PI, 3, 5);

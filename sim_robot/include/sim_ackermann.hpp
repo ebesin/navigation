@@ -1,14 +1,17 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-26
- * @LastEditTime : 2023-06-27
+ * @LastEditTime : 2023-06-28
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
  */
 
 #include "bicycle_kinematics.hpp"
+#include "geometry_msgs/msg/accel_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+#include "mpc_msgs/msg/operation_mode_state.hpp"
+#include "mpc_msgs/msg/steering_report.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -22,6 +25,11 @@ private:
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_subscriber_;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr      odom_publisher_;
     rclcpp::TimerBase::SharedPtr                               pub_timer;
+
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr                        current_odom_publisher_;
+    rclcpp::Publisher<geometry_msgs::msg::AccelWithCovarianceStamped>::SharedPtr current_accel_publisher_;
+    rclcpp::Publisher<mpc_msgs::msg::OperationModeState>::SharedPtr              current_operation_mode_publisher_;
+    rclcpp::Publisher<mpc_msgs::msg::SteeringReport>::SharedPtr                  current_steering_publisher_;
 
     bool is_init_ = false;
 

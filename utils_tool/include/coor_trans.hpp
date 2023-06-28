@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-27
- * @LastEditTime : 2023-06-27
+ * @LastEditTime : 2023-06-28
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -14,6 +14,11 @@
 
 namespace utils_tool {
 
+/**
+ * @description  : 根据航向创建四元数
+ * @param         {double} yaw:
+ * @return        {*}
+ */
 geometry_msgs::msg::Quaternion createQuaternionMsgFromYaw(double yaw)
 {
     tf2::Quaternion q;
@@ -21,6 +26,11 @@ geometry_msgs::msg::Quaternion createQuaternionMsgFromYaw(double yaw)
     return tf2::toMsg(q);
 }
 
+/**
+ * @description  : 根据四元数获取航向
+ * @param         {Quaternion&} q:
+ * @return        {*}
+ */
 double getYawFromQuaternion(const geometry_msgs::msg::Quaternion& q)
 {
     tf2::Quaternion tf_q;
@@ -29,5 +39,18 @@ double getYawFromQuaternion(const geometry_msgs::msg::Quaternion& q)
     double         roll, pitch, yaw;
     m.getRPY(roll, pitch, yaw);
     return yaw;
+}
+
+/**
+ * @description  : 获取向量角度
+ * @param         {double} x:
+ * @param         {double} y:
+ * @return        {*}
+ */
+double getHeadingFromVector(double x, double y)
+{
+    double theta = x / sqrt(x * x + y * y);
+    theta        = y >= 0 ? theta : -theta;
+    return theta;
 }
 }   // namespace utils_tool

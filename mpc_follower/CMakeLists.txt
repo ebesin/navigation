@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.8)
 project(mpc_follower)
-
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -21,11 +24,32 @@ find_package(PCL REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(nav2_util REQUIRED)
+find_package(nav2_common REQUIRED)
 get_target_property(OSQP_INCLUDE_SUB_DIR osqp::osqp INTERFACE_INCLUDE_DIRECTORIES)
 get_filename_component(OSQP_INCLUDE_DIR ${OSQP_INCLUDE_SUB_DIR} PATH)
 
 include_directories(
   include
+)
+include_directories(SYSTEM
+  ${Boost_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+)
+set(DEPENDENCIES
+  rclcpp
+  Eigen3
+  mpc_msgs
+  geometry_msgs
+  nav_msgs
+  tier4_debug_msgs
+  visualization_msgs
+  diagnostic_msgs
+  unique_identifier_msgs
+  PCL
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
 )
 
 # ###############################################################################
@@ -81,7 +105,9 @@ set(VEHICLE_MODEL_DEPENDENCIES
 ament_target_dependencies(${vehicle_model_library_name}
   ${VEHICLE_MODEL_DEPENDENCIES}
 )
-
+ament_target_dependencies(${vehicle_model_library_name}
+  ${DEPENDENCIES}
+)
 # ###############################################################################
 # ##############
 # OSQP_SOLVER
@@ -116,6 +142,10 @@ set(MPC_UTILS_LIB_SRC
 )
 add_library(${mpc_utils_library_name} SHARED
   ${MPC_UTILS_LIB_SRC}
+)
+target_include_directories(${mpc_utils_library_name}
+  SYSTEM PUBLIC
+  "${EIGEN3_INCLUDE_DIR}"
 )
 set(MPC_UTILS_DEPENDENCIES
   rclcpp
@@ -159,6 +189,10 @@ set(INTERPOLATION_DEPENDENCIES
 ament_target_dependencies(${interpolation_library_name}
   ${INTERPOLATION_DEPENDENCIES}
 )
+ament_target_dependencies(${interpolation_library_name}
+  ${DEPENDENCIES}
+)
+
 target_link_libraries(${interpolation_library_name} ${mpc_utils_library_name})
 
 # ###############################################################################
@@ -191,13 +225,53 @@ set(MOTION_UTILS_DEPENDENCIES
 ament_target_dependencies(${motion_utils_library_name}
   ${MOTION_UTILS_DEPENDENCIES}
 )
+ament_target_dependencies(${motion_utils_library_name}
+  ${DEPENDENCIES}
+)
 target_link_libraries(${motion_utils_library_name}
-  ${mpc_utils_library_name}
-  ${interpolation_library_name}
+    ${interpolation_library_name}
+    ${mpc_utils_library_name}
 )
 
 # ###############################################################################
 
+
+# ##############
+# VEHICLE_INFO_UTIL
+# ##############
+set(vehicle_info_util_library_name vehicle_info_util_lib CACHE INTERNAL "library")
+set(VEHICLE_INFO_UTIL_SRC
+  src/vehicle_info_util/vehicle_info_util.cpp
+)
+add_library(${vehicle_info_util_library_name} SHARED
+  ${VEHICLE_INFO_UTIL_SRC}
+)
+ament_target_dependencies(${vehicle_info_util_library_name}
+  ${DEPENDENCIES}
+)
+target_link_libraries(${vehicle_info_util_library_name}
+  ${mpc_utils_library_name}
+)
+
+# ##############
+# STEERING_OFFSET
+# ##############
+set(steering_offset_library_name steering_offset_lib CACHE INTERNAL "library")
+set(STEERING_OFFSET_SRC
+  src/steering_offset/steering_offset.cpp
+)
+add_library(${steering_offset_library_name} SHARED
+  ${STEERING_OFFSET_SRC}
+)
+set(STEERING_OFFSET_DEPENDENCIES
+  geometry_msgs
+)
+ament_target_dependencies(${steering_offset_library_name}
+  ${STEERING_OFFSET_DEPENDENCIES}
+)
+ament_target_dependencies(${steering_offset_library_name}
+  ${DEPENDENCIES}
+)
 # ##############
 # MPC
 # ##############
@@ -208,16 +282,61 @@ set(MPC_LIB_SRC
   src/mpc_follower/mpc_utils.cpp
   src/mpc_follower/steering_predictor.cpp
   src/mpc_follower/mpc.cpp
+  src/mpc_follower/mpc_controller.cpp
 )
 add_library(${mpc_library_name} SHARED
   ${MPC_LIB_SRC}
+)
+set(MPC_DEPENDENCIES
+  nav2_util
+)
+ament_target_dependencies(${mpc_library_name}
+  ${MPC_DEPENDENCIES}
+)
+ament_target_dependencies(${mpc_library_name}
+  ${DEPENDENCIES}
 )
 target_link_libraries(${mpc_library_name}
   ${mpc_utils_library_name}
   ${interpolation_library_name}
   ${motion_utils_library_name}
+  ${osqp_solver_library_name}
   ${osqp_library_name}
   ${vehicle_model_library_name}
+  ${vehicle_info_util_library_name}
+  ${steering_offset_library_name}
+)
+
+
+set(mpc_controller_exec_name mpc_controller_node)
+set(MPC_CONTROLLER_EXEC__SRC
+    src/mpc_follower/mpc_controller_node.cpp
+)
+add_executable(${mpc_controller_exec_name} ${MPC_CONTROLLER_EXEC__SRC})
+set(MPC_CONTROLLER_DEPENDENCIES
+  rclcpp
+  Eigen3
+  mpc_msgs
+  geometry_msgs
+  nav_msgs
+  tier4_debug_msgs
+  visualization_msgs
+  diagnostic_msgs
+  unique_identifier_msgs
+  PCL
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
+ament_target_dependencies(${mpc_controller_exec_name}
+  ${MPC_CONTROLLER_DEPENDENCIES}
+)
+target_link_libraries(${mpc_controller_exec_name}
+    ${mpc_library_name}
+)
+
+install(TARGETS ${mpc_controller_exec_name}
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
 # uncomment the following section in order to fill in

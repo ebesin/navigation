@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-04-19
- * @LastEditTime : 2023-04-19
+ * @LastEditTime : 2023-06-28
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -17,13 +17,12 @@ InitPoseSubscriber2D::InitPoseSubscriber2D(std::string        name,
     : nav2_util::LifecycleNode(
           name,
           "",
-          rclcpp::NodeOptions().arguments(
-              {"--ros-args",
-               "-r",
-               std::string("__ns:=") + nav2_util::add_namespaces(parent_namespace, local_namespace),
-               "--ros-args",
-               "-r",
-               name + ":" + std::string("__node:=") + name}))
+          rclcpp::NodeOptions().arguments({"--ros-args",
+                                           "-r",
+                                           std::string("__ns:=") + nav2_util::add_namespaces(parent_namespace, local_namespace),
+                                           "--ros-args",
+                                           "-r",
+                                           name + ":" + std::string("__node:=") + name}))
 {
     RCLCPP_INFO(get_logger(), "Creating Init_Pose_Subscriber...");
     this->name_ = name;
@@ -66,21 +65,18 @@ nav2_util::CallbackReturn InitPoseSubscriber2D::on_shutdown(const rclcpp_lifecyc
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
-void InitPoseSubscriber2D::messageCallBack(
-    const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr init_pose_ptr)
+void InitPoseSubscriber2D::messageCallBack(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr init_pose_ptr)
 {
     buff_mutex_.lock();
     init_poses_.emplace_back(init_pose_ptr);
     RCLCPP_INFO_STREAM(get_logger(),
                        "receive_init_pose------>"
-                           << "x: " << init_pose_ptr->pose.pose.position.x
-                           << " y: " << init_pose_ptr->pose.pose.position.y
+                           << "x: " << init_pose_ptr->pose.pose.position.x << " y: " << init_pose_ptr->pose.pose.position.y
                            << " z: " << init_pose_ptr->pose.pose.position.z);
     buff_mutex_.unlock();
 }
 
-void InitPoseSubscriber2D::parseData(
-    std::deque<geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr>& pose_data_buff)
+void InitPoseSubscriber2D::parseData(std::deque<geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr>& pose_data_buff)
 {
     buff_mutex_.lock();
     if (!init_poses_.empty()) {

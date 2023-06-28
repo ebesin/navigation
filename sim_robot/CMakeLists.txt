@@ -15,6 +15,7 @@ find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(mpc_msgs REQUIRED)
 
 # 设置头文件相对路径
 include_directories(
@@ -34,6 +35,7 @@ set(SIM_ROBOT_DEPENDENCIES
     rclcpp
     nav_msgs
     tf2_geometry_msgs
+    mpc_msgs
 )
 ament_target_dependencies(${sim_robot_library_name}
     ${SIM_ROBOT_DEPENDENCIES}

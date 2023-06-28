@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-24
- * @LastEditTime : 2023-06-25
+ * @LastEditTime : 2023-06-28
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -15,6 +15,8 @@
 #include "mpc_follower/mpc_trajectory.hpp"
 #include "mpc_follower/mpc_utils.hpp"
 #include "mpc_follower/vehicle_model/vehicle_model_bicycle_kinematics_no_delay.hpp"
+#include "qp_solver/qp_solver_osqp.hpp"
+#include "qp_solver/qp_solver_unconstr_fast.hpp"
 
 #include "mpc_msgs/msg/ackermann_lateral_command.hpp"
 #include "mpc_msgs/msg/operation_mode_state.hpp"
@@ -29,7 +31,7 @@
 
 #include "tier4_debug_msgs/msg/float32_multi_array_stamped.hpp"
 #include "tier4_debug_msgs/msg/float32_stamped.hpp"
-#include "tier4_debug_msgs/tier4_debug_msgs/msg/float32_stamped.hpp"
+#include "tier4_debug_msgs/msg/multi_array_layout.hpp"
 
 #include <deque>
 #include <memory>
@@ -43,10 +45,10 @@ using mpc_msgs::msg::AckermannLateralCommand;
 using mpc_msgs::msg::Trajectory;
 using mpc_msgs::msg::SteeringReport;
 using nav_msgs::msg::Odometry;
-using tier4_debug_msgs::msg::Float32MultiArrayStamped;
+// using tier4_debug_msgs::msg::Float32MultiArrayStamped;
 using tier4_debug_msgs::msg::Float32Stamped;
 
-class MpcController : public nav2_util::LifecycleNode
+class MpcController : public rclcpp::Node
 {
 public:
     MpcController(const std::string& name, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
@@ -74,42 +76,42 @@ public:
         LateralSyncData                        sync_data;
     };
 
-    /**
-   * @brief Configure node
-   */
-    nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State& state) override;
+    //     /**
+    //    * @brief Configure node
+    //    */
+    void configure();
 
-    /**
-   * @brief Activate node
-   */
-    nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State& state) override;
+    //     /**
+    //    * @brief Activate node
+    //    */
+    //     nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State& state) override;
 
-    /**
-   * @brief Deactivate node
-   */
-    nav2_util::CallbackReturn on_deactivate(const rclcpp_lifecycle::State& state) override;
+    //     /**
+    //    * @brief Deactivate node
+    //    */
+    //     nav2_util::CallbackReturn on_deactivate(const rclcpp_lifecycle::State& state) override;
 
-    /**
-   * @brief Cleanup node
-   */
-    nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State& state) override;
+    //     /**
+    //    * @brief Cleanup node
+    //    */
+    //     nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State& state) override;
 
-    /**
-   * @brief shutdown node
-   */
-    nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State& state) override;
+    //     /**
+    //    * @brief shutdown node
+    //    */
+    //     nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State& state) override;
 
 private:
     rclcpp::TimerBase::SharedPtr timer_control_;
     double                       timeout_thr_sec_;
 
-    rclcpp::Subscription<Trajectory>::SharedPtr                                             ref_path_subscriber_;
-    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr                                odometry_subscriber_;
-    rclcpp::Subscription<mpc_msgs::msg::SteeringReport>::SharedPtr                          steering_subscriber_;
-    rclcpp::Subscription<geometry_msgs::msg::AccelWithCovarianceStamped>::SharedPtr         accel_subscriber_;
-    rclcpp::Subscription<mpc_msgs::msg::OperationModeState>::SharedPtr                      operation_mode_subscriber_;
-    rclcpp_lifecycle::LifecyclePublisher<mpc_msgs::msg::AckermannLateralCommand>::SharedPtr control_cmd_publisher_;
-    rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::MarkerArray>::SharedPtr   debug_marker_publisher_;
+    rclcpp::Subscription<Trajectory>::SharedPtr                                     ref_path_subscriber_;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr                        odometry_subscriber_;
+    rclcpp::Subscription<mpc_msgs::msg::SteeringReport>::SharedPtr                  steering_subscriber_;
+    rclcpp::Subscription<geometry_msgs::msg::AccelWithCovarianceStamped>::SharedPtr accel_subscriber_;
+    rclcpp::Subscription<mpc_msgs::msg::OperationModeState>::SharedPtr              operation_mode_subscriber_;
+    rclcpp::Publisher<mpc_msgs::msg::AckermannLateralCommand>::SharedPtr            control_cmd_publisher_;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr              debug_marker_publisher_;
 
 
     void callbackTimerControl();
@@ -125,9 +127,9 @@ private:
     mpc_msgs::msg::OperationModeState::SharedPtr              current_operation_mode_ptr_;
 
 
-    rclcpp_lifecycle::LifecyclePublisher<Trajectory>::SharedPtr               predicted_traj_publisher_;
-    rclcpp_lifecycle::LifecyclePublisher<Float32MultiArrayStamped>::SharedPtr debug_values_publisher_;
-    rclcpp_lifecycle::LifecyclePublisher<Float32Stamped>::SharedPtr           steer_offset_publisher_;
+    rclcpp::Publisher<Trajectory>::SharedPtr                                      predicted_traj_publisher_;
+    rclcpp::Publisher<tier4_debug_msgs::msg::Float32MultiArrayStamped>::SharedPtr debug_values_publisher_;
+    rclcpp::Publisher<Float32Stamped>::SharedPtr                                  steer_offset_publisher_;
 
 
     //!< @brief parameters for path smoothing
@@ -276,7 +278,7 @@ private:
    * @brief Publish diagnostic message.
    * @param diagnostic Diagnostic message to be published.
    */
-    void publishDebugValues(Float32MultiArrayStamped& diagnostic) const;
+    void publishDebugValues(tier4_debug_msgs::msg::Float32MultiArrayStamped& diagnostic) const;
 
     /**
    * @brief Get the stop control command.
@@ -333,13 +335,13 @@ private:
    */
     rcl_interfaces::msg::SetParametersResult paramCallback(const std::vector<rclcpp::Parameter>& parameters);
 
-    template<typename... Args> inline void info_throttle(Args&&... args)
-    {
-        RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 5000, args...);
-    }
+    // template<typename... Args> inline void info_throttle(Args&&... args)
+    // {
+    //     RCLCPP_INFO_THROTTLE(get_logger(), get_clock(), 5000, args...);
+    // }
 
-    template<typename... Args> inline void warn_throttle(Args&&... args)
-    {
-        RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 5000, args...);
-    }
+    // template<typename... Args> inline void warn_throttle(Args&&... args)
+    // {
+    //     RCLCPP_WARN_THROTTLE(get_logger(), get_clock(), 5000, args...);
+    // }
 };

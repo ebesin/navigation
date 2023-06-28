@@ -12,12 +12,6 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
-find_package(ament_cmake_auto REQUIRED)
-ament_auto_find_build_dependencies()
-
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/DTLane.msg"
   "msg/Waypoint.msg"
@@ -40,8 +34,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/PathWithLaneId.msg"
   "msg/VehicleOdometry.msg"
   "msg/OperationModeState.msg"
-  DEPENDENCIES geometry_msgs std_msgs # Add packages that above messages depend on, in this case geometry_msgs for Sphere.msg
+  DEPENDENCIES builtin_interfaces geometry_msgs std_msgs
 )
 
 ament_export_dependencies(rosidl_default_runtime)
-ament_auto_package()
+
+ament_package()

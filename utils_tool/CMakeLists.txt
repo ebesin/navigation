@@ -16,6 +16,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(mpc_msgs REQUIRED)
 
 # 设置头文件相对路径
 include_directories(
@@ -45,6 +46,12 @@ set(VISUALIZATION_TOOL_EXEC_SRC
     src/visualization_node.cpp
 )
 add_executable(${visualization_tool_exec_name} ${VISUALIZATION_TOOL_EXEC_SRC})
+set(VISUALIZATION_TOOL_EXEC_DEPENDENCIES
+    mpc_msgs
+)
+ament_target_dependencies(${visualization_tool_exec_name}
+    ${VISUALIZATION_TOOL_EXEC_DEPENDENCIES}
+)
 target_link_libraries(${visualization_tool_exec_name}
     ${visualization_tool_library_name}
 )
