@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-24
- * @LastEditTime : 2023-06-28
+ * @LastEditTime : 2023-06-30
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -11,6 +11,7 @@
 #include "geometry_msgs/msg/accel_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
+#include "geometry_msgs/msg/twist.hpp"
 #include "mpc_follower/mpc.hpp"
 #include "mpc_follower/mpc_trajectory.hpp"
 #include "mpc_follower/mpc_utils.hpp"
@@ -112,6 +113,7 @@ private:
     rclcpp::Subscription<mpc_msgs::msg::OperationModeState>::SharedPtr              operation_mode_subscriber_;
     rclcpp::Publisher<mpc_msgs::msg::AckermannLateralCommand>::SharedPtr            control_cmd_publisher_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr              debug_marker_publisher_;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr                         cmd_publisher_;
 
 
     void callbackTimerControl();

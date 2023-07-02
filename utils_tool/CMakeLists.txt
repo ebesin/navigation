@@ -17,12 +17,15 @@ find_package(nav_msgs REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(mpc_msgs REQUIRED)
+find_package(GTest REQUIRED)
 
 # 设置头文件相对路径
 include_directories(
     include
 )
 
+
+# visualization_tool
 set(visualization_tool_library_name visualization_tool_lib)
 set(VISUALIZATION_TOOL_SRC
     src/visualization_tool.cpp
@@ -56,7 +59,78 @@ target_link_libraries(${visualization_tool_exec_name}
     ${visualization_tool_library_name}
 )
 
+# path_generator
+set(path_generator_library_name path_generator_lib)
+set(PATH_GENERATOR_SRC
+    src/path_generator.cpp
+)
+add_library(${path_generator_library_name} SHARED
+    ${PATH_GENERATOR_SRC}
+)
+set(PATH_GENERATOR_DEPENDENCIES
+    geometry_msgs
+    rclcpp
+    nav_msgs
+    visualization_msgs
+    tf2_geometry_msgs
+    mpc_msgs
+)
+ament_target_dependencies(${path_generator_library_name}
+    ${PATH_GENERATOR_DEPENDENCIES}
+)
+
+set(path_generator_exec_name path_generator_node)
+set(PATH_GENERATOR_EXEC_SRC
+    src/path_generator_node.cpp
+)
+add_executable(${path_generator_exec_name} ${PATH_GENERATOR_EXEC_SRC})
+set(PATH_GENERATOR_EXEC_DEPENDENCIES
+    geometry_msgs
+    rclcpp
+    nav_msgs
+    visualization_msgs
+    tf2_geometry_msgs
+    mpc_msgs
+)
+ament_target_dependencies(${path_generator_exec_name}
+    ${PATH_GENERATOR_EXEC_DEPENDENCIES}
+)
+target_link_libraries(${path_generator_exec_name}
+    ${path_generator_library_name}
+)
+
+
+set(util_tool_test_exec_name util_tool_test)
+set(UTIL_TOOL_TEST_EXEC_SRC
+    test/test_coor_trans.cpp
+)
+add_executable(${util_tool_test_exec_name} ${UTIL_TOOL_TEST_EXEC_SRC})
+set(UTIL_TOOL_TEST_EXEC_DEPENDENCIES
+    GTest
+    geometry_msgs
+    rclcpp
+    nav_msgs
+    visualization_msgs
+    tf2_geometry_msgs
+    mpc_msgs
+)
+ament_target_dependencies(${util_tool_test_exec_name}
+    ${UTIL_TOOL_TEST_EXEC_DEPENDENCIES}
+)
+target_link_libraries(${util_tool_test_exec_name}
+    gtest
+)
+
+
 install(TARGETS ${visualization_tool_exec_name}
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS ${path_generator_exec_name}
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS ${util_tool_test_exec_name}
     RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -65,6 +139,15 @@ install(TARGETS ${visualization_tool_library_name}
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
+
+install(TARGETS ${path_generator_library_name}
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+
+
 
 if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)

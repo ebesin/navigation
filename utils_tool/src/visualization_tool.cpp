@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-27
- * @LastEditTime : 2023-06-27
+ * @LastEditTime : 2023-06-30
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -17,6 +17,7 @@ VisualizationTools::VisualizationTools(std::string name)
     initMarkers();
     odom_subscriber_ = create_subscription<nav_msgs::msg::Odometry>(
         odom_topic_name_, rclcpp::SystemDefaultsQoS(), std::bind(&VisualizationTools::odomCallback, this, std::placeholders::_1));
+    // path_subscriber_ =
     marker_publisher_ =
         create_publisher<visualization_msgs::msg::MarkerArray>("visualization_marker", rclcpp::SystemDefaultsQoS());
 }
@@ -35,6 +36,8 @@ void VisualizationTools::odomCallback(const nav_msgs::msg::Odometry::SharedPtr o
     markers_.markers[1].pose.position.x -= 1;
     marker_publisher_->publish(markers_);
 }
+
+void VisualizationTools::pathCallback(const nav_msgs::msg::Path::SharedPtr path) {}
 
 void VisualizationTools::initMarkers()
 {
@@ -69,6 +72,7 @@ void VisualizationTools::initMarkers()
     odom_text_marker_.color.r = 1;
     odom_text_marker_.color.g = 1;
     odom_text_marker_.color.b = 0;
+
 
     markers_.markers.push_back(odom_robot_marker_);
     markers_.markers.push_back(odom_text_marker_);

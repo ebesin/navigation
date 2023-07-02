@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-21
- * @LastEditTime : 2023-06-24
+ * @LastEditTime : 2023-06-30
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -38,7 +38,8 @@ bool MPC::calculateMPC(const SteeringReport&     current_steer,
 
     // calculate initial state of the error dynamics
     const auto x0 = getInitialState(mpc_data);
-
+    std::cout << "x00:" << std::endl;
+    std::cout << x0 << std::endl;
     // apply time delay compensation to the initial state
     const auto [success_delay, x0_delayed] = updateStateForDelayCompensation(reference_trajectory, mpc_data.nearest_time, x0);
     if (!success_delay) {
@@ -47,8 +48,11 @@ bool MPC::calculateMPC(const SteeringReport&     current_steer,
 
     // resample reference trajectory with mpc sampling time
     const double mpc_start_time = mpc_data.nearest_time + m_param.input_delay;
-    const double prediction_dt  = getPredictionDeltaTime(mpc_start_time, reference_trajectory, current_kinematics);
 
+    // RCLCPP_INFO(m_logger, "input_delay: %f", m_param.input_delay);
+    // RCLCPP_INFO(m_logger, "mpc_start_time: %f", mpc_start_time);
+    const double prediction_dt = getPredictionDeltaTime(mpc_start_time, reference_trajectory, current_kinematics);
+    // RCLCPP_INFO(m_logger, "reference_trajectory_size:%d", reference_trajectory.vx.size());
     const auto [success_resample, mpc_resampled_ref_trajectory] =
         resampleMPCTrajectoryByTime(mpc_start_time, prediction_dt, reference_trajectory);
     if (!success_resample) {
@@ -64,7 +68,7 @@ bool MPC::calculateMPC(const SteeringReport&     current_steer,
     if (!success_opt) {
         return fail_warn_throttle("optimization failed. Stop MPC.");
     }
-
+    RCLCPP_INFO(m_logger, "calculateMPC after opt");
     // apply filters for the input limitation and low pass filter
     const double u_saturated = std::clamp(Uex(0), -m_steer_lim, m_steer_lim);
     const double u_filtered  = m_lpf_steering_cmd.filter(u_saturated);
@@ -90,7 +94,7 @@ bool MPC::calculateMPC(const SteeringReport&     current_steer,
 
     // prepare diagnostic message
     diagnostic = generateDiagData(reference_trajectory, mpc_data, mpc_matrix, ctrl_cmd, Uex, current_kinematics);
-
+    RCLCPP_INFO(m_logger, "calculateMPC last");
     return true;
 }
 
@@ -226,7 +230,19 @@ void MPC::setReferenceTrajectory(const Trajectory& trajectory_msg, const Traject
         return;
     }
 
-    m_reference_trajectory = mpc_traj_smoothed;
+    // m_reference_trajectory = mpc_traj_smoothed;
+    m_reference_trajectory = mpc_traj_raw;
+    // for (int i = 0; i < m_reference_trajectory.vx.size(); i++) {
+    //     RCLCPP_INFO(m_logger,
+    //                 "%d---->x:%f  y:%f  v:%f  yaw:%f  k:%f  relative_time:%f",
+    //                 i,
+    //                 m_reference_trajectory.x[i],
+    //                 m_reference_trajectory.y[i],
+    //                 m_reference_trajectory.vx[i],
+    //                 m_reference_trajectory.yaw[i],
+    //                 m_reference_trajectory.k[i],
+    //                 m_reference_trajectory.relative_time[i]);
+    // }
 }
 
 void MPC::resetPrevResult(const SteeringReport& current_steer)
@@ -257,7 +273,8 @@ std::pair<bool, MPCData> MPC::getData(const MPCTrajectory&  traj,
         warn_throttle("calculateMPC: error in calculating nearest pose. stop mpc.");
         return {false, MPCData{}};
     }
-
+    // std::cout << "[getData]-->"
+    //           << "nearest_time: " << data.nearest_time << std::endl;
     // get data
     data.steer       = static_cast<double>(current_steer.steering_tire_angle);
     data.lateral_err = MPCUtils::calcLateralError(current_pose, data.nearest_pose);
@@ -407,6 +424,7 @@ MPCTrajectory MPC::applyVelocityDynamicsFilter(const MPCTrajectory& input, const
  */
 MPCMatrix MPC::generateMPCMatrix(const MPCTrajectory& reference_trajectory, const double prediction_dt)
 {
+    // RCLCPP_INFO(m_logger, "prediction_dt: %f", prediction_dt);
     const int    N     = m_param.prediction_horizon;
     const double DT    = prediction_dt;
     const int    DIM_X = m_vehicle_model_ptr->getDimX();
@@ -508,7 +526,8 @@ MPCMatrix MPC::generateMPCMatrix(const MPCTrajectory& reference_trajectory, cons
     }
 
     addSteerWeightR(prediction_dt, m.R1ex);
-
+    // std::cout << m.Aex << std::endl;
+    // std::cout << m.Bex << std::endl;
     return m;
 }
 
@@ -555,13 +574,18 @@ std::pair<bool, VectorXd> MPC::executeOptimization(
     H.triangularView<Eigen::Upper>() = CB.transpose() * QCB;
     H.triangularView<Eigen::Upper>() += m.R1ex + m.R2ex;
     H.triangularView<Eigen::Lower>() = H.transpose();
-    MatrixXd f                       = (m.Cex * (m.Aex * x0 + m.Wex)).transpose() * QCB - m.Uref_ex.transpose() * m.R1ex;
+    std::cout << "x0:" << std::endl;
+    std::cout << x0 << std::endl;
+    MatrixXd f = (m.Cex * (m.Aex * x0 + m.Wex)).transpose() * QCB - m.Uref_ex.transpose() * m.R1ex;
+    std::cout << "f:" << std::endl;
+    std::cout << f << std::endl;
     addSteerWeightF(prediction_dt, f);
 
-    MatrixXd A = MatrixXd::Identity(DIM_U_N, DIM_U_N);
-    for (int i = 1; i < DIM_U_N; i++) {
-        A(i, i - 1) = -1.0;
-    }
+    // MatrixXd A = MatrixXd::Identity(DIM_U_N, DIM_U_N);
+    MatrixXd A = MatrixXd::Zero(DIM_U_N, DIM_U_N);
+    // for (int i = 1; i < DIM_U_N; i++) {
+    //     A(i, i - 1) = -1.0;
+    // }
 
     const bool is_vehicle_stopped          = std::fabs(current_velocity) < 0.01;
     const auto get_adaptive_steer_rate_lim = [&](const double curvature, const double velocity) {
@@ -590,18 +614,21 @@ std::pair<bool, VectorXd> MPC::executeOptimization(
 
     VectorXd lb = VectorXd::Constant(DIM_U_N, -m_steer_lim);   // min steering angle
     VectorXd ub = VectorXd::Constant(DIM_U_N, m_steer_lim);    // max steering angle
-
-    VectorXd lbA(DIM_U_N);
-    VectorXd ubA(DIM_U_N);
-    for (int i = 0; i < DIM_U_N; ++i) {
-        const double adaptive_steer_rate_lim  = get_adaptive_steer_rate_lim(traj.smooth_k.at(i), traj.vx.at(i));
-        const double adaptive_delta_steer_lim = adaptive_steer_rate_lim * prediction_dt;
-        lbA(i)                                = -adaptive_delta_steer_lim;
-        ubA(i)                                = adaptive_delta_steer_lim;
-    }
-    const double adaptive_steer_rate_lim = get_adaptive_steer_rate_lim(traj.smooth_k.at(0), traj.vx.at(0));
-    lbA(0, 0)                            = m_raw_steer_cmd_prev - adaptive_steer_rate_lim * m_ctrl_period;
-    ubA(0, 0)                            = m_raw_steer_cmd_prev + adaptive_steer_rate_lim * m_ctrl_period;
+    // RCLCPP_INFO(m_logger, "m_steer_lim:%f", m_steer_lim);
+    // VectorXd lbA(DIM_U_N);
+    // VectorXd ubA(DIM_U_N);
+    VectorXd lbA = VectorXd::Zero(DIM_U_N);
+    VectorXd ubA = VectorXd::Zero(DIM_U_N);
+    // for (int i = 0; i < DIM_U_N; ++i) {
+    //     const double adaptive_steer_rate_lim  = get_adaptive_steer_rate_lim(traj.smooth_k.at(i), traj.vx.at(i));
+    //     const double adaptive_delta_steer_lim = adaptive_steer_rate_lim * prediction_dt;
+    //     lbA(i)                                = -adaptive_delta_steer_lim;
+    //     ubA(i)                                = adaptive_delta_steer_lim;
+    // }
+    // const double adaptive_steer_rate_lim = get_adaptive_steer_rate_lim(traj.smooth_k.at(0), traj.vx.at(0));
+    // lbA(0, 0)                            = m_raw_steer_cmd_prev - adaptive_steer_rate_lim * m_ctrl_period;
+    // ubA(0, 0)                            = m_raw_steer_cmd_prev + adaptive_steer_rate_lim * m_ctrl_period;
+    // std::cout << H << std::endl;
 
     auto t_start      = std::chrono::system_clock::now();
     bool solve_result = m_qpsolver_ptr->solve(H, f.transpose(), A, lb, ub, lbA, ubA, Uex);
@@ -613,7 +640,8 @@ std::pair<bool, VectorXd> MPC::executeOptimization(
 
     {
         auto t = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
-        RCLCPP_DEBUG(m_logger, "qp solver calculation time = %ld [ms]", t);
+        // auto t = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
+        RCLCPP_INFO(m_logger, "qp solver calculation time = %ld [ms]", t);
     }
 
     if (Uex.array().isNaN().any()) {

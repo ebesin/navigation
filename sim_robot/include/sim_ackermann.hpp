@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-26
- * @LastEditTime : 2023-06-28
+ * @LastEditTime : 2023-06-30
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -10,6 +10,7 @@
 #include "bicycle_kinematics.hpp"
 #include "geometry_msgs/msg/accel_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+#include "mpc_msgs/msg/ackermann_lateral_command.hpp"
 #include "mpc_msgs/msg/operation_mode_state.hpp"
 #include "mpc_msgs/msg/steering_report.hpp"
 #include "nav_msgs/msg/odometry.hpp"
@@ -22,9 +23,10 @@ class SimAckermann : public rclcpp::Node
 {
 private:
     /* data */
-    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_subscriber_;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr      odom_publisher_;
-    rclcpp::TimerBase::SharedPtr                               pub_timer;
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr              cmd_subscriber_;
+    rclcpp::Subscription<mpc_msgs::msg::AckermannLateralCommand>::SharedPtr lateral_control_subscriber_;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr                   odom_publisher_;
+    rclcpp::TimerBase::SharedPtr                                            pub_timer;
 
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr                        current_odom_publisher_;
     rclcpp::Publisher<geometry_msgs::msg::AccelWithCovarianceStamped>::SharedPtr current_accel_publisher_;
@@ -62,6 +64,7 @@ private:
      * @return        {*}
      */
     void cmdCallback(const geometry_msgs::msg::Twist::SharedPtr cmd_vel);
+    void lateralControlCallback(const mpc_msgs::msg::AckermannLateralCommand::SharedPtr cmd_vel);
 
     /**
      * @description  : 定时器回调

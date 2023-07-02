@@ -1,15 +1,15 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-23
- * @LastEditTime : 2023-06-23
+ * @LastEditTime : 2023-06-29
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
  */
 
 #include "mpc_follower/vehicle_model/vehicle_model_bicycle_kinematics_no_delay.hpp"
-
 #include <cmath>
+#include <iostream>
 
 KinematicsBicycleModelNoDelay::KinematicsBicycleModelNoDelay(const double wheelbase, const double steer_lim)
     : VehicleModelInterface(/* dim_x */ 2, /* dim_u */ 1, /* dim_y */ 2, wheelbase)
@@ -20,6 +20,7 @@ KinematicsBicycleModelNoDelay::KinematicsBicycleModelNoDelay(const double wheelb
 void KinematicsBicycleModelNoDelay::calculateDiscreteMatrix(
     Eigen::MatrixXd& a_d, Eigen::MatrixXd& b_d, Eigen::MatrixXd& c_d, Eigen::MatrixXd& w_d, const double dt)
 {
+
     auto sign = [](double x) { return (x > 0.0) - (x < 0.0); };
 
     /* Linearize delta around delta_r (reference delta) */
@@ -32,11 +33,14 @@ void KinematicsBicycleModelNoDelay::calculateDiscreteMatrix(
     a_d << 0.0, m_velocity, 0.0, 0.0;
 
     b_d << 0.0, m_velocity / m_wheelbase * cos_delta_r_squared_inv;
-
+    // std::cout << "b_d: " << std::endl;
+    // std::cout << b_d << std::endl;
     c_d << 1.0, 0.0, 0.0, 1.0;
 
     w_d << 0.0, -m_velocity / m_wheelbase * delta_r * cos_delta_r_squared_inv;
-
+    // std::cout << "w_d: " << std::endl;
+    // std::cout << w_d << std::endl;
+    // std::cout << "m_velocity:" << m_velocity << "  m_wheelbase:" << m_wheelbase << "  delta_r:" << delta_r << std::endl;
     // bilinear discretization for ZOH system
     // no discretization is needed for Cd
     Eigen::MatrixXd       I          = Eigen::MatrixXd::Identity(m_dim_x, m_dim_x);

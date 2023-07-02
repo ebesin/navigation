@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-27
- * @LastEditTime : 2023-06-28
+ * @LastEditTime : 2023-06-29
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -49,7 +49,7 @@ double getYawFromQuaternion(const geometry_msgs::msg::Quaternion& q)
  */
 double getHeadingFromVector(double x, double y)
 {
-    double theta = x / sqrt(x * x + y * y);
+    double theta = acos(x / sqrt(x * x + y * y));
     theta        = y >= 0 ? theta : -theta;
     return theta;
 }

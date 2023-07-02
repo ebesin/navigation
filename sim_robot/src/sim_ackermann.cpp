@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-26
- * @LastEditTime : 2023-06-28
+ * @LastEditTime : 2023-06-30
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -32,6 +32,10 @@ SimAckermann::SimAckermann(std::string name)
     /*initialize subscriber and publisher*/
     cmd_subscriber_ = create_subscription<geometry_msgs::msg::Twist>(
         "cmd_vel", rclcpp::SystemDefaultsQoS(), std::bind(&SimAckermann::cmdCallback, this, std::placeholders::_1));
+    lateral_control_subscriber_ = create_subscription<mpc_msgs::msg::AckermannLateralCommand>(
+        "/mpc_controller/output/control_cmd",
+        rclcpp::SystemDefaultsQoS(),
+        std::bind(&SimAckermann::lateralControlCallback, this, std::placeholders::_1));
     odom_publisher_ = create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::SystemDefaultsQoS());
 
     current_odom_publisher_ =
@@ -71,6 +75,14 @@ void SimAckermann::cmdCallback(const geometry_msgs::msg::Twist::SharedPtr cmd)
     simulator_ptr_->calKinematics(
         *current_state_ptr_, sim_robot::BicycleKinematics::CtrlInput(cmd->linear.x, cmd->angular.z), time_interval);
     last_time_ = current_time_;
+}
+
+void SimAckermann::lateralControlCallback(const mpc_msgs::msg::AckermannLateralCommand::SharedPtr lateral_command)
+{
+    geometry_msgs::msg::Twist::SharedPtr cmd = std::make_shared<geometry_msgs::msg::Twist>();
+    cmd->linear.x                            = 0.5;
+    cmd->angular.z                           = lateral_command->steering_tire_angle;
+    cmdCallback(cmd);
 }
 
 void SimAckermann::timerCallback()

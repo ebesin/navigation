@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-24
- * @LastEditTime : 2023-06-28
+ * @LastEditTime : 2023-06-30
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -32,12 +32,12 @@ MpcController::MpcController(const std::string& name, const rclcpp::NodeOptions&
     declare_parameter("qp_solver_type", rclcpp::ParameterValue("osqp"));
     declare_parameter("mpc_prediction_horizon", rclcpp::ParameterValue(50));
     declare_parameter("mpc_prediction_dt", rclcpp::ParameterValue(0.1));
-    declare_parameter("mpc_weight_lat_error", rclcpp::ParameterValue(1.0));
+    declare_parameter("mpc_weight_lat_error", rclcpp::ParameterValue(0.1));
     declare_parameter("mpc_weight_heading_error", rclcpp::ParameterValue(0.0));
     declare_parameter("mpc_weight_heading_error_squared_vel", rclcpp::ParameterValue(0.3));
     declare_parameter("mpc_weight_steering_input", rclcpp::ParameterValue(1.0));
     declare_parameter("mpc_weight_steering_input_squared_vel", rclcpp::ParameterValue(0.25));
-    declare_parameter("mpc_weight_lat_jerk", rclcpp::ParameterValue(0.1));
+    declare_parameter("mpc_weight_lat_jerk", rclcpp::ParameterValue(0.0));
     declare_parameter("mpc_weight_steer_rate", rclcpp::ParameterValue(0.0));
     declare_parameter("mpc_weight_steer_acc", rclcpp::ParameterValue(0.000001));
     declare_parameter("mpc_low_curvature_weight_lat_error", rclcpp::ParameterValue(0.1));
@@ -97,9 +97,11 @@ MpcController::~MpcController() {}
 
 void MpcController::configure()
 {
-    RCLCPP_INFO(get_logger(), "configure...");
+
     auto node = this;
-    RCLCPP_INFO(get_logger(), "configure1...");
+
+    node->get_parameter_or("ctrl_period", mpc_.m_ctrl_period, 0.05);
+
     node->get_parameter("enable_path_smoothing", trajectory_filtering_param_.enable_path_smoothing);
     node->get_parameter("path_filter_moving_ave_num", trajectory_filtering_param_.path_filter_moving_ave_num);
     node->get_parameter("curvature_smoothing_num_traj", trajectory_filtering_param_.curvature_smoothing_num_traj);
@@ -109,7 +111,7 @@ void MpcController::configure()
                         trajectory_filtering_param_.extend_trajectory_for_end_yaw_control);
 
     node->get_parameter("admissible_position_error", mpc_.m_admissible_position_error);
-    node->get_parameter("admissible_position_error", mpc_.m_admissible_position_error);
+    node->get_parameter("admissible_yaw_error_rad", mpc_.m_admissible_yaw_error_rad);
     node->get_parameter("use_steer_prediction", mpc_.m_use_steer_prediction);
     node->get_parameter("vehicle_model_steer_tau", mpc_.m_param.steer_tau);
 
@@ -121,7 +123,6 @@ void MpcController::configure()
     node->get_parameter("new_traj_end_dist", new_traj_end_dist_);
     node->get_parameter("mpc_converged_threshold_rps", mpc_converged_threshold_rps_);
 
-    RCLCPP_INFO(get_logger(), "configure2...");
     const auto       vehicle_info = vehicle_info_util::VehicleInfoUtil(node, std::string("vehicle_info")).getVehicleInfo();
     const double     wheelbase    = vehicle_info.wheel_base_m;
     constexpr double deg2rad      = static_cast<double>(M_PI) / 180.0;
@@ -136,7 +137,7 @@ void MpcController::configure()
         mpc_.m_steer_rate_lim_map_by_curvature.emplace_back(curvature_list_for_steer_rate_lim.at(i),
                                                             steer_rate_lim_dps_list_by_curvature.at(i) * deg2rad);
     }
-    RCLCPP_INFO(get_logger(), "configure3...");
+
     // steer rate limit depending on velocity
     std::vector<double> steer_rate_lim_dps_list_by_velocity;
     std::vector<double> velocity_list_for_steer_rate_lim;
@@ -146,7 +147,7 @@ void MpcController::configure()
         mpc_.m_steer_rate_lim_map_by_velocity.emplace_back(velocity_list_for_steer_rate_lim.at(i),
                                                            steer_rate_lim_dps_list_by_velocity.at(i) * deg2rad);
     }
-    RCLCPP_INFO(get_logger(), "configure4...");
+
     /*vehicle model setup*/
     auto vehicle_model_ptr = createVehicleModel(wheelbase, mpc_.m_steer_lim, mpc_.m_param.steer_tau);
     mpc_.setVehicleModel(vehicle_model_ptr);
@@ -162,7 +163,7 @@ void MpcController::configure()
         mpc_.m_param.input_delay = delay_step * mpc_.m_ctrl_period;
         mpc_.m_input_buffer      = std::deque<double>(static_cast<size_t>(delay_step), 0.0);
     }
-    RCLCPP_INFO(get_logger(), "configure5...");
+
     /* steering offset compensation */
     node->get_parameter("steering_offset.enable_auto_steering_offset_removal", enable_auto_steering_offset_removal_);
     steering_offset_ = createSteerOffsetEstimator(wheelbase);
@@ -177,7 +178,6 @@ void MpcController::configure()
         mpc_.initializeLowPassFilters(steering_lpf_cutoff_hz, error_deriv_lpf_cutoff_hz);
     }
 
-    RCLCPP_INFO(get_logger(), "configure6...");
     // ego nearest index search
     node->get_parameter("ego_nearest_dist_threshold", ego_nearest_dist_threshold_);
     node->get_parameter("ego_nearest_yaw_threshold", ego_nearest_yaw_threshold_);
@@ -202,10 +202,10 @@ void MpcController::configure()
             current_operation_mode_ptr_ = msg;
         });
 
-    // control_cmd_publisher_ =
-    //     create_publisher<mpc_msgs::msg::AckermannControlCommand>("~/output/control_cmd", rclcpp::QoS{1}.transient_local());
+    control_cmd_publisher_ =
+        create_publisher<mpc_msgs::msg::AckermannLateralCommand>("~/output/control_cmd", rclcpp::QoS{1}.transient_local());
     debug_marker_publisher_ = create_publisher<visualization_msgs::msg::MarkerArray>("~/output/debug_marker", rclcpp::QoS{1});
-
+    cmd_publisher_          = create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", rclcpp::SystemDefaultsQoS());
     declareMPCparameters();
 
     /* get parameter updates */
@@ -216,7 +216,7 @@ void MpcController::configure()
 
     mpc_.setLogger(node->get_logger());
     mpc_.setClock(node->get_clock());
-    RCLCPP_INFO(get_logger(), "configure7...");
+
     /*Timer*/
     {
         double ctrl_period;
@@ -256,6 +256,7 @@ nav2_util::CallbackReturn MpcController::on_shutdown(const rclcpp_lifecycle::Sta
 
 void MpcController::callbackTimerControl()
 {
+    RCLCPP_INFO(get_logger(), "callbackTimerControl");
     // 1. create input data
     const auto input_data = createInputData(*get_clock());
     if (!input_data) {
@@ -264,6 +265,9 @@ void MpcController::callbackTimerControl()
         return;
     }
     MpcController::LateralOutput lat_out = run(*input_data);
+    RCLCPP_INFO(get_logger(), "after run");
+    RCLCPP_INFO(get_logger(), "steering_tire_angle: %f", lat_out.control_cmd.steering_tire_angle);
+
     // mpc_msgs::msg::AckermannLateralCommand out;
     // out.stamp               = this->now();
     // out.steering_tire_angle = lat_out.control_cmd.steering_tire_angle;
@@ -297,8 +301,9 @@ MpcController::LateralOutput MpcController::run(MpcController::InputData const& 
     else {
         setSteeringToHistory(ctrl_cmd);
     }
+    RCLCPP_INFO(get_logger(), "before publishPredictedTraj");
     publishPredictedTraj(predicted_traj);
-
+    RCLCPP_INFO(get_logger(), "after publishPredictedTraj");
     const auto createLateralOutput = [this](const auto& cmd, const bool is_mpc_solved) {
         MpcController::LateralOutput output;
         output.control_cmd = createCtrlCmdMsg(cmd);
@@ -307,12 +312,55 @@ MpcController::LateralOutput MpcController::run(MpcController::InputData const& 
         // 1. At the last loop, mpc should be solved because command should be optimized output.
         // 2. The mpc should be converged.
         // 3. The steer angle should be converged.
-        output.sync_data.is_steer_converged = is_mpc_solved && isMpcConverged() && isSteerConverged(cmd);
+        // output.sync_data.is_steer_converged = is_mpc_solved && isMpcConverged() && isSteerConverged(cmd);
+        output.sync_data.is_steer_converged = is_mpc_solved && isMpcConverged();
 
         return output;
     };
+    // if (isStoppedState()) {
+    //     // Reset input buffer
+    //     for (auto& value : m_mpc.m_input_buffer) {
+    //         value = m_ctrl_cmd_prev.steering_tire_angle;
+    //     }
+    //     // Use previous command value as previous raw steer command
+    //     m_mpc.m_raw_steer_cmd_prev = m_ctrl_cmd_prev.steering_tire_angle;
+    //     return createLateralOutput(m_ctrl_cmd_prev, false);
+    // }
+
+    // if (!is_mpc_solved) {
+    //     warn_throttle("MPC is not solved. publish 0 velocity.");
+    //     ctrl_cmd = getStopControlCommand();
+    // }
+
+    ctrl_cmd_prev_ = ctrl_cmd;
+    return createLateralOutput(ctrl_cmd, is_mpc_solved);
 }
 
+
+AckermannLateralCommand MpcController::createCtrlCmdMsg(const AckermannLateralCommand& ctrl_cmd)
+{
+    auto out        = ctrl_cmd;
+    out.stamp       = now();
+    steer_cmd_prev_ = out.steering_tire_angle;
+    return out;
+}
+
+
+
+// bool MpcController::isSteerConverged(const AckermannLateralCommand& cmd) const
+// {
+//     // wait for a while to propagate the trajectory shape to the output command when the trajectory
+//     // shape is changed.
+//     if (!has_received_first_trajectory_ || isTrajectoryShapeChanged()) {
+//         RCLCPP_DEBUG(node_->get_logger(), "trajectory shaped is changed");
+//         return false;
+//     }
+
+//     const bool is_converged =
+//         std::abs(cmd.steering_tire_angle - m_current_steering.steering_tire_angle) < static_cast<float>(m_converged_steer_rad);
+
+//     return is_converged;
+// }
 
 std::shared_ptr<QPSolverInterface> MpcController::createQPSolverInterface()
 {

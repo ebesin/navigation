@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-23
- * @LastEditTime : 2023-06-23
+ * @LastEditTime : 2023-06-29
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -301,6 +301,9 @@ bool calcNearestPoseInterp(const MPCTrajectory& traj,
 
     *nearest_index = motion_utils::findFirstNearestIndexWithSoftConstraints(autoware_traj.points, self_pose, max_dist, max_yaw);
     const size_t traj_size = traj.size();
+    // std::cout << "nearest_index: " << *nearest_index << std::endl;
+    // std::cout << "traj.relative_time size: " << traj.relative_time.size() << std::endl;
+    // std::cout << "traj.relative_time[0]: " << traj.relative_time[0] << std::endl;
 
     if (traj.size() == 1) {
         nearest_pose->position.x  = traj.x.at(*nearest_index);
@@ -328,13 +331,14 @@ bool calcNearestPoseInterp(const MPCTrajectory& traj,
     const double dx3  = traj.x.at(*nearest_index) - traj.x.at(second_nearest_index);
     const double dy3  = traj.y.at(*nearest_index) - traj.y.at(second_nearest_index);
     const double c_sq = dx3 * dx3 + dy3 * dy3;
-
+    // std::cout << "nearest_time: " << *nearest_time << std::endl;
     /* if distance between two points are too close */
     if (c_sq < 1.0E-5) {
         nearest_pose->position.x  = traj.x.at(*nearest_index);
         nearest_pose->position.y  = traj.y.at(*nearest_index);
         nearest_pose->orientation = createQuaternionFromYaw(traj.yaw.at(*nearest_index));
         *nearest_time             = traj.relative_time.at(*nearest_index);
+        // std::cout << "nearest_time: " << *nearest_time << std::endl;
         return true;
     }
 
@@ -346,6 +350,7 @@ bool calcNearestPoseInterp(const MPCTrajectory& traj,
     const double nearest_yaw  = normalizeRadian(traj.yaw.at(second_nearest_index) + alpha * tmp_yaw_err);
     nearest_pose->orientation = createQuaternionFromYaw(nearest_yaw);
     *nearest_time = alpha * traj.relative_time.at(*nearest_index) + (1 - alpha) * traj.relative_time.at(second_nearest_index);
+    // std::cout << "nearest_time: " << *nearest_time << std::endl;
     return true;
 }
 
