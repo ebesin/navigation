@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-26
- * @LastEditTime : 2023-06-30
+ * @LastEditTime : 2023-07-02
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -26,7 +26,7 @@ private:
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr              cmd_subscriber_;
     rclcpp::Subscription<mpc_msgs::msg::AckermannLateralCommand>::SharedPtr lateral_control_subscriber_;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr                   odom_publisher_;
-    rclcpp::TimerBase::SharedPtr                                            pub_timer;
+    rclcpp::TimerBase::SharedPtr                                            pub_timer_;
 
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr                        current_odom_publisher_;
     rclcpp::Publisher<geometry_msgs::msg::AccelWithCovarianceStamped>::SharedPtr current_accel_publisher_;

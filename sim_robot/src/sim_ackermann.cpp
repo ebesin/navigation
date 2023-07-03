@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-26
- * @LastEditTime : 2023-06-30
+ * @LastEditTime : 2023-07-02
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -49,7 +49,7 @@ SimAckermann::SimAckermann(std::string name)
 
     /*initialize timer*/
     const auto period_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(pub_period_));
-    pub_timer            = create_wall_timer(period_ns, std::bind(&SimAckermann::timerCallback, this));
+    pub_timer_           = create_wall_timer(period_ns, std::bind(&SimAckermann::timerCallback, this));
 }
 
 SimAckermann::~SimAckermann() {}

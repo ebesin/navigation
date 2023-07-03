@@ -1,0 +1,5 @@
+/path_generator:
+   ros__parameters:
+      traj_type: "sin"
+      sin_cycle: 18.85
+      sin_amplitude: 4.0

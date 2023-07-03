@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-21
- * @LastEditTime : 2023-06-30
+ * @LastEditTime : 2023-07-02
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -38,8 +38,8 @@ bool MPC::calculateMPC(const SteeringReport&     current_steer,
 
     // calculate initial state of the error dynamics
     const auto x0 = getInitialState(mpc_data);
-    std::cout << "x00:" << std::endl;
-    std::cout << x0 << std::endl;
+    // std::cout << "x00:" << std::endl;
+    // std::cout << x0 << std::endl;
     // apply time delay compensation to the initial state
     const auto [success_delay, x0_delayed] = updateStateForDelayCompensation(reference_trajectory, mpc_data.nearest_time, x0);
     if (!success_delay) {
@@ -68,7 +68,7 @@ bool MPC::calculateMPC(const SteeringReport&     current_steer,
     if (!success_opt) {
         return fail_warn_throttle("optimization failed. Stop MPC.");
     }
-    RCLCPP_INFO(m_logger, "calculateMPC after opt");
+    // RCLCPP_INFO(m_logger, "calculateMPC after opt");
     // apply filters for the input limitation and low pass filter
     const double u_saturated = std::clamp(Uex(0), -m_steer_lim, m_steer_lim);
     const double u_filtered  = m_lpf_steering_cmd.filter(u_saturated);
@@ -94,7 +94,7 @@ bool MPC::calculateMPC(const SteeringReport&     current_steer,
 
     // prepare diagnostic message
     diagnostic = generateDiagData(reference_trajectory, mpc_data, mpc_matrix, ctrl_cmd, Uex, current_kinematics);
-    RCLCPP_INFO(m_logger, "calculateMPC last");
+    // RCLCPP_INFO(m_logger, "calculateMPC last");
     return true;
 }
 
@@ -574,11 +574,11 @@ std::pair<bool, VectorXd> MPC::executeOptimization(
     H.triangularView<Eigen::Upper>() = CB.transpose() * QCB;
     H.triangularView<Eigen::Upper>() += m.R1ex + m.R2ex;
     H.triangularView<Eigen::Lower>() = H.transpose();
-    std::cout << "x0:" << std::endl;
-    std::cout << x0 << std::endl;
+    // std::cout << "x0:" << std::endl;
+    // std::cout << x0 << std::endl;
     MatrixXd f = (m.Cex * (m.Aex * x0 + m.Wex)).transpose() * QCB - m.Uref_ex.transpose() * m.R1ex;
-    std::cout << "f:" << std::endl;
-    std::cout << f << std::endl;
+    // std::cout << "f:" << std::endl;
+    // std::cout << f << std::endl;
     addSteerWeightF(prediction_dt, f);
 
     // MatrixXd A = MatrixXd::Identity(DIM_U_N, DIM_U_N);

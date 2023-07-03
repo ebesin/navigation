@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-26
- * @LastEditTime : 2023-06-26
+ * @LastEditTime : 2023-07-02
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -24,7 +24,6 @@ void BicycleKinematics::calKinematics(BicycleKinematics::State&           curren
 {
     auto             deg2rad = [](double deg) { return deg / 180 * M_PI; };
     rclcpp::Duration time    = rclcpp::Duration::from_nanoseconds(0);
-    std::cout << "sim_time: " << sim_time.seconds() << std::endl;
     while (time < sim_time) {
         double time_interval = min_sim_time_.seconds();
         current_state        = current_state + State(u.v * cos(current_state.phi_) * time_interval,

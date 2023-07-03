@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-28
- * @LastEditTime : 2023-06-30
+ * @LastEditTime : 2023-07-02
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -21,11 +21,15 @@ private:
     /* data */
     rclcpp::Publisher<Trajectory>::SharedPtr          trajectory_publisher_;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher_;
+    rclcpp::TimerBase::SharedPtr                      pub_timer_;
     Trajectory                                        traj_;
+    nav_msgs::msg::Path                               path_;
     std::string                                       traj_type_;
     double                                            resulation_;
     double                                            velocity_;
     double                                            wheel_base_;
+    double                                            cycle_;
+    double                                            amplitude_;
 
     double path_length_;
     /*路径方向，仅对直线有用*/
@@ -44,9 +48,13 @@ public:
 
     /**
      * @description  : 生成sin曲线路径
+     * @param         {double} length: 沿x轴的长度
+     * @param         {double} heading: x轴方向
+     * @param         {double} cycle: 周期
+     * @param         {double} amplitude: 幅度
      * @return        {*}
      */
-    void generateSinCurve();
+    void generateSinCurve(double length, double heading, double cycle, double amplitude);
 
     /**
      * @description  : 生成直线路径
@@ -61,5 +69,18 @@ public:
      * @return        {*}
      */
     void generateCircleCurve();
+
+
+    /**
+     * @description  : 定时器回调
+     * @return        {*}
+     */
+    void timerCallback();
+
+    /**
+     * @description  : 开启定时器
+     * @return        {*}
+     */
+    void startTimer();
 };
 }   // namespace utils_tool

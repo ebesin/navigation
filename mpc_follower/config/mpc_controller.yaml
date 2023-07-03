@@ -1,4 +1,4 @@
-/**:
+/mpc_controller:
   ros__parameters:
     # -- system --
     traj_resample_dist: 0.1         # path resampling interval [m]
@@ -19,8 +19,8 @@
     qp_solver_type: "osqp"                       # optimization solver option (unconstraint_fast or osqp)
     mpc_prediction_horizon: 50                   # prediction horizon step
     mpc_prediction_dt: 0.1                       # prediction horizon period [s]
-    mpc_weight_lat_error: 1.0                    # lateral error weight in matrix Q
-    mpc_weight_heading_error: 0.0                # heading error weight in matrix Q
+    mpc_weight_lat_error: 10.0                    # lateral error weight in matrix Q
+    mpc_weight_heading_error: 0.1                # heading error weight in matrix Q
     mpc_weight_heading_error_squared_vel: 0.3    # heading error * velocity weight in matrix Q
     mpc_weight_steering_input: 1.0               # steering error weight in matrix R
     mpc_weight_steering_input_squared_vel: 0.25  # steering error * velocity weight in matrix R
@@ -44,7 +44,7 @@
     mpc_min_prediction_length: 5.0               # minimum prediction length
 
     # -- vehicle model --
-    vehicle_model_type: "kinematics" # vehicle model type for mpc prediction. option is kinematics, kinematics_no_delay, and dynamics
+    vehicle_model_type: "kinematics_no_delay" # vehicle model type for mpc prediction. option is kinematics, kinematics_no_delay, and dynamics
     input_delay: 0.24                # steering input delay time for delay compensation
     vehicle_model_steer_tau: 0.3     # steering dynamics time constant (1d approximation) [s]
     steer_rate_lim_dps_list_by_curvature: [10.0, 20.0, 30.0]            # steering angle rate limit list depending on curvature [deg/s]
@@ -75,15 +75,15 @@
       steering_offset_limit: 0.02
 
     vehicle_info:
-        wheel_radius: 0.383 # The radius of the wheel, primarily used for dead reckoning.
-        wheel_width: 0.235 # The lateral width of a wheel tire, primarily used for dead reckoning.
-        wheel_base: 2.79 # between front wheel center and rear wheel center
-        wheel_tread: 1.64 # between left wheel center and right wheel center
-        front_overhang: 1.0 # between front wheel center and vehicle front
-        rear_overhang: 1.1 # between rear wheel center and vehicle rear
-        left_overhang: 0.128 # between left wheel center and vehicle left
-        right_overhang: 0.128 # between right wheel center and vehicle right
-        vehicle_height: 2.5
-        max_steer_angle: 0.70 # [rad]
+        wheel_radius: 0.16425 # The radius of the wheel, primarily used for dead reckoning.
+        wheel_width: 0.142 # The lateral width of a wheel tire, primarily used for dead reckoning.
+        wheel_base: 0.6495 # between front wheel center and rear wheel center
+        wheel_tread: 0.05 # between left wheel center and right wheel center
+        front_overhang: 0.0 # between front wheel center and vehicle front
+        rear_overhang: 0.0 # between rear wheel center and vehicle rear
+        left_overhang: 0.0 # between left wheel center and vehicle left
+        right_overhang: 0.0 # between right wheel center and vehicle right
+        vehicle_height: 45.0
+        max_steer_angle: 0.43633 # [rad]
 
     

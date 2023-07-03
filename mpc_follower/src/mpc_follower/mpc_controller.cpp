@@ -1,7 +1,7 @@
 /*
  * @Author       : dwayne
  * @Date         : 2023-06-24
- * @LastEditTime : 2023-06-30
+ * @LastEditTime : 2023-07-02
  * @Description  : 
  * 
  * Copyright (c) 2023 by dwayne, All Rights Reserved. 
@@ -32,7 +32,7 @@ MpcController::MpcController(const std::string& name, const rclcpp::NodeOptions&
     declare_parameter("qp_solver_type", rclcpp::ParameterValue("osqp"));
     declare_parameter("mpc_prediction_horizon", rclcpp::ParameterValue(50));
     declare_parameter("mpc_prediction_dt", rclcpp::ParameterValue(0.1));
-    declare_parameter("mpc_weight_lat_error", rclcpp::ParameterValue(0.1));
+    declare_parameter("mpc_weight_lat_error", rclcpp::ParameterValue(1.0));
     declare_parameter("mpc_weight_heading_error", rclcpp::ParameterValue(0.0));
     declare_parameter("mpc_weight_heading_error_squared_vel", rclcpp::ParameterValue(0.3));
     declare_parameter("mpc_weight_steering_input", rclcpp::ParameterValue(1.0));
@@ -256,7 +256,7 @@ nav2_util::CallbackReturn MpcController::on_shutdown(const rclcpp_lifecycle::Sta
 
 void MpcController::callbackTimerControl()
 {
-    RCLCPP_INFO(get_logger(), "callbackTimerControl");
+    // RCLCPP_INFO(get_logger(), "callbackTimerControl");
     // 1. create input data
     const auto input_data = createInputData(*get_clock());
     if (!input_data) {
@@ -265,8 +265,8 @@ void MpcController::callbackTimerControl()
         return;
     }
     MpcController::LateralOutput lat_out = run(*input_data);
-    RCLCPP_INFO(get_logger(), "after run");
-    RCLCPP_INFO(get_logger(), "steering_tire_angle: %f", lat_out.control_cmd.steering_tire_angle);
+    // RCLCPP_INFO(get_logger(), "after run");
+    // RCLCPP_INFO(get_logger(), "steering_tire_angle: %f", lat_out.control_cmd.steering_tire_angle);
 
     // mpc_msgs::msg::AckermannLateralCommand out;
     // out.stamp               = this->now();
@@ -301,9 +301,9 @@ MpcController::LateralOutput MpcController::run(MpcController::InputData const& 
     else {
         setSteeringToHistory(ctrl_cmd);
     }
-    RCLCPP_INFO(get_logger(), "before publishPredictedTraj");
+    // RCLCPP_INFO(get_logger(), "before publishPredictedTraj");
     publishPredictedTraj(predicted_traj);
-    RCLCPP_INFO(get_logger(), "after publishPredictedTraj");
+    // RCLCPP_INFO(get_logger(), "after publishPredictedTraj");
     const auto createLateralOutput = [this](const auto& cmd, const bool is_mpc_solved) {
         MpcController::LateralOutput output;
         output.control_cmd = createCtrlCmdMsg(cmd);
@@ -444,26 +444,31 @@ boost::optional<MpcController::InputData> MpcController::createInputData(rclcpp:
 {
     if (!current_trajectory_ptr_) {
         RCLCPP_INFO_THROTTLE(get_logger(), clock, 5000, "Waiting for trajectory.");
+        RCLCPP_INFO(get_logger(), "Waiting for trajectory.");
         return {};
     }
 
     if (!current_odometry_ptr_) {
         RCLCPP_INFO_THROTTLE(get_logger(), clock, 5000, "Waiting for current odometry.");
+        RCLCPP_INFO(get_logger(), "Waiting for odometry.");
         return {};
     }
 
     if (!current_steering_ptr_) {
         RCLCPP_INFO_THROTTLE(get_logger(), clock, 5000, "Waiting for current steering.");
+        RCLCPP_INFO(get_logger(), "Waiting for steering.");
         return {};
     }
 
     if (!current_accel_ptr_) {
         RCLCPP_INFO_THROTTLE(get_logger(), clock, 5000, "Waiting for current accel.");
+        RCLCPP_INFO(get_logger(), "Waiting for accel.");
         return {};
     }
 
     if (!current_operation_mode_ptr_) {
         RCLCPP_INFO_THROTTLE(get_logger(), clock, 5000, "Waiting for current operation mode.");
+        RCLCPP_INFO(get_logger(), "Waiting for operation mode.");
         return {};
     }
 
@@ -556,6 +561,7 @@ void MpcController::declareMPCparameters()
     node->get_parameter("mpc_acceleration_limit", mpc_.m_param.acceleration_limit);
     node->get_parameter("mpc_velocity_time_constant", mpc_.m_param.velocity_time_constant);
     node->get_parameter("mpc_min_prediction_length", mpc_.m_param.min_prediction_length);
+    RCLCPP_INFO(get_logger(), "mpc_weight_heading_error:%f", mpc_.m_param.nominal_weight.heading_error);
 }
 
 std::shared_ptr<VehicleModelInterface> MpcController::createVehicleModel(const double wheelbase,
