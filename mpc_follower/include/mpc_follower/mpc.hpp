@@ -150,6 +150,9 @@ struct MPCData
     // Current steering angle.
     double steer{};
 
+    // Ref velocity
+    double ref_vx{};
+
     // Predicted steering angle based on the vehicle model.
     double predicted_steer{};
 
@@ -427,6 +430,7 @@ public:
     bool calculateMPC(const SteeringReport&     current_steer,
                       const Odometry&           current_kinematics,
                       AckermannLateralCommand&  ctrl_cmd,
+                      double&                   v_x,
                       Trajectory&               predicted_trajectory,
                       Float32MultiArrayStamped& diagnostic);
 

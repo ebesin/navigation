@@ -51,7 +51,7 @@ public:
    */
     nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State& state) override;
 
-    void odomCallback(const nav_msgs::msg::Odometry::SharedPtr odom);
+    // void odomCallback(const nav_msgs::msg::Odometry::SharedPtr odom);
 
     void add_point_pair(Vec2d first, Vec2d second);
 
@@ -67,7 +67,7 @@ private:
     rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::Marker>::SharedPtr serch_tree_publisher_;
     visualization_msgs::msg::Marker                                                  tree_list_;
     visualization_msgs::msg::Marker                                                  odom_robot_marker_;
-    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr                         odom_subscriber_;
+    // rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr                         odom_subscriber_;
 };
 
 

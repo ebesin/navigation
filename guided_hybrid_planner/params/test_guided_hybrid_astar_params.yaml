@@ -58,7 +58,7 @@ guided_hybrid_planner_flow:
     steering_change_penalty: 2.0
     steering_penalty: 1.2
     max_steer_angle: 27.0
-    publish_serch_tree: true
+    publish_serch_tree: false
     show_log: false
     serch_radius: 1.0
 

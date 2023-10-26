@@ -265,8 +265,7 @@ void dynamicSmoothingVelocity(
     const size_t start_idx, const double start_vel, const double acc_lim, const double tau, MPCTrajectory& traj)
 {
     double curr_v         = start_vel;
-    traj.vx.at(start_idx) = start_vel;
-
+    traj.vx.at(start_idx) = traj.vx.at(start_idx) >= 0 ? std::max(start_vel, 0.1) : -std::max(start_vel, 0.1);
     for (size_t i = start_idx + 1; i < traj.size(); ++i) {
         const double ds        = calcDistance2d(traj, i, i - 1);
         const double dt        = ds / std::max(std::fabs(curr_v), std::numeric_limits<double>::epsilon());
@@ -284,6 +283,7 @@ bool calcNearestPoseInterp(const MPCTrajectory& traj,
                            Pose*                nearest_pose,
                            size_t*              nearest_index,
                            double*              nearest_time,
+                           double*              ref_vx,
                            const double         max_dist,
                            const double         max_yaw)
 {
@@ -310,6 +310,7 @@ bool calcNearestPoseInterp(const MPCTrajectory& traj,
         nearest_pose->position.y  = traj.y.at(*nearest_index);
         nearest_pose->orientation = createQuaternionFromYaw(traj.yaw.at(*nearest_index));
         *nearest_time             = traj.relative_time.at(*nearest_index);
+        *ref_vx                   = traj.vx.at(*nearest_index);
         return true;
     }
 
@@ -338,6 +339,7 @@ bool calcNearestPoseInterp(const MPCTrajectory& traj,
         nearest_pose->position.y  = traj.y.at(*nearest_index);
         nearest_pose->orientation = createQuaternionFromYaw(traj.yaw.at(*nearest_index));
         *nearest_time             = traj.relative_time.at(*nearest_index);
+        *ref_vx                   = traj.vx.at(*nearest_index);
         // std::cout << "nearest_time: " << *nearest_time << std::endl;
         return true;
     }
@@ -350,6 +352,7 @@ bool calcNearestPoseInterp(const MPCTrajectory& traj,
     const double nearest_yaw  = normalizeRadian(traj.yaw.at(second_nearest_index) + alpha * tmp_yaw_err);
     nearest_pose->orientation = createQuaternionFromYaw(nearest_yaw);
     *nearest_time = alpha * traj.relative_time.at(*nearest_index) + (1 - alpha) * traj.relative_time.at(second_nearest_index);
+    *ref_vx       = alpha * traj.vx.at(*nearest_index) + (1 - alpha) * traj.vx.at(second_nearest_index);
     // std::cout << "nearest_time: " << *nearest_time << std::endl;
     return true;
 }

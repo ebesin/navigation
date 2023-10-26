@@ -251,6 +251,8 @@ private:
    */
     LateralOutput run(MpcController::InputData const& input_data);
 
+    geometry_msgs::msg::Twist run2(MpcController::InputData const& input_data);
+
     /**
    * @brief Set the current trajectory using the received message.
    * @param msg Received trajectory message.

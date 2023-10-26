@@ -22,8 +22,8 @@ nav2_util::CallbackReturn VisualizationTools::on_configure(const rclcpp_lifecycl
     RCLCPP_INFO(get_logger(), "Configuring");
 
     serch_tree_publisher_ = create_publisher<visualization_msgs::msg::Marker>("serch_tree", 1);
-    odom_subscriber_      = create_subscription<nav_msgs::msg::Odometry>(
-        "odom", rclcpp::SystemDefaultsQoS(), std::bind(&VisualizationTools::odomCallback, this, std::placeholders::_1));
+    // odom_subscriber_      = create_subscription<nav_msgs::msg::Odometry>(
+    //     "odom", rclcpp::SystemDefaultsQoS(), std::bind(&VisualizationTools::odomCallback, this, std::placeholders::_1));
     return nav2_util::CallbackReturn::SUCCESS;
 }
 

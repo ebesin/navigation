@@ -166,6 +166,7 @@ bool calcNearestPoseInterp(const MPCTrajectory& traj,
                            Pose*                nearest_pose,
                            size_t*              nearest_index,
                            double*              nearest_time,
+                           double*              ref_vx,
                            const double         max_dist,
                            const double         max_yaw);
 

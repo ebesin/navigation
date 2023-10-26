@@ -264,17 +264,49 @@ void MpcController::callbackTimerControl()
         RCLCPP_WARN(get_logger(), "Control is skipped since input data is not ready.");
         return;
     }
-    MpcController::LateralOutput lat_out = run(*input_data);
+    // MpcController::LateralOutput lat_out = run(*input_data);
+    geometry_msgs::msg::Twist twist = run2(*input_data);
     // RCLCPP_INFO(get_logger(), "after run");
     // RCLCPP_INFO(get_logger(), "steering_tire_angle: %f", lat_out.control_cmd.steering_tire_angle);
 
     // mpc_msgs::msg::AckermannLateralCommand out;
     // out.stamp               = this->now();
     // out.steering_tire_angle = lat_out.control_cmd.steering_tire_angle;
-    control_cmd_publisher_->publish(lat_out.control_cmd);
-
+    // control_cmd_publisher_->publish(lat_out.control_cmd);
+    cmd_publisher_->publish(twist);
     // 6. publish debug marker
     // publishDebugMarker(*input_data, lat_out);
+}
+
+geometry_msgs::msg::Twist MpcController::run2(MpcController::InputData const& input_data)
+{
+    mpc_.setReferenceTrajectory(input_data.current_trajectory, trajectory_filtering_param_);
+    current_trajectory_      = input_data.current_trajectory;
+    current_kinematic_state_ = input_data.current_odometry;
+    current_steering_        = input_data.current_steering;
+
+    AckermannLateralCommand  ctrl_cmd;
+    double                   vx;
+    Trajectory               predicted_traj;
+    Float32MultiArrayStamped debug_values;
+    if (!is_ctrl_cmd_prev_initialized_) {
+        ctrl_cmd_prev_                = getInitialControlCommand();
+        is_ctrl_cmd_prev_initialized_ = true;
+    }
+    const bool is_mpc_solved =
+        mpc_.calculateMPC(current_steering_, current_kinematic_state_, ctrl_cmd, vx, predicted_traj, debug_values);
+    if (!is_mpc_solved) {
+        mpc_.resetPrevResult(current_steering_);
+    }
+    else {
+        setSteeringToHistory(ctrl_cmd);
+    }
+    geometry_msgs::msg::Twist twist;
+    twist.linear.x  = vx;
+    twist.angular.z = ctrl_cmd.steering_tire_angle;
+    publishPredictedTraj(predicted_traj);
+    ctrl_cmd_prev_ = ctrl_cmd;
+    return twist;
 }
 
 MpcController::LateralOutput MpcController::run(MpcController::InputData const& input_data)
@@ -285,6 +317,7 @@ MpcController::LateralOutput MpcController::run(MpcController::InputData const& 
     current_steering_        = input_data.current_steering;
 
     AckermannLateralCommand  ctrl_cmd;
+    double                   vx;
     Trajectory               predicted_traj;
     Float32MultiArrayStamped debug_values;
     if (!is_ctrl_cmd_prev_initialized_) {
@@ -293,7 +326,7 @@ MpcController::LateralOutput MpcController::run(MpcController::InputData const& 
     }
 
     const bool is_mpc_solved =
-        mpc_.calculateMPC(current_steering_, current_kinematic_state_, ctrl_cmd, predicted_traj, debug_values);
+        mpc_.calculateMPC(current_steering_, current_kinematic_state_, ctrl_cmd, vx, predicted_traj, debug_values);
 
     if (!is_mpc_solved) {
         mpc_.resetPrevResult(current_steering_);
@@ -301,6 +334,9 @@ MpcController::LateralOutput MpcController::run(MpcController::InputData const& 
     else {
         setSteeringToHistory(ctrl_cmd);
     }
+    geometry_msgs::msg::Twist twist;
+    twist.linear.x  = vx;
+    twist.angular.z = ctrl_cmd.steering_tire_angle;
     // RCLCPP_INFO(get_logger(), "before publishPredictedTraj");
     publishPredictedTraj(predicted_traj);
     // RCLCPP_INFO(get_logger(), "after publishPredictedTraj");

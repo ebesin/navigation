@@ -23,6 +23,7 @@ using mpc_utils::rad2deg;
 bool MPC::calculateMPC(const SteeringReport&     current_steer,
                        const Odometry&           current_kinematics,
                        AckermannLateralCommand&  ctrl_cmd,
+                       double&                   v_x,
                        Trajectory&               predicted_trajectory,
                        Float32MultiArrayStamped& diagnostic)
 {
@@ -32,6 +33,7 @@ bool MPC::calculateMPC(const SteeringReport&     current_steer,
 
     // get the necessary data
     const auto [success_data, mpc_data] = getData(reference_trajectory, current_steer, current_kinematics);
+    v_x                                 = mpc_data.ref_vx;
     if (!success_data) {
         return fail_warn_throttle("fail to get MPC Data. Stop MPC.");
     }
@@ -268,6 +270,7 @@ std::pair<bool, MPCData> MPC::getData(const MPCTrajectory&  traj,
                                          &(data.nearest_pose),
                                          &(data.nearest_idx),
                                          &(data.nearest_time),
+                                         &(data.ref_vx),
                                          ego_nearest_dist_threshold,
                                          ego_nearest_yaw_threshold)) {
         warn_throttle("calculateMPC: error in calculating nearest pose. stop mpc.");

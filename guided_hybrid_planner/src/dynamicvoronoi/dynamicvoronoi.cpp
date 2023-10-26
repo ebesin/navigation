@@ -391,19 +391,18 @@ void DynamicVoronoi::visualize(const char* filename)
         for (int x = 0; x < sizeX; x++) {
             std::cout << "sqdist--->" << sqrt(data[x][y].sqdist) << "   dist--->" << data[x][y].dist << std::endl;
             unsigned char c = 0;
-            // if (isVoronoi(x, y)) {
-            //     fputc(255, F);
-            //     fputc(0, F);
-            //     fputc(0, F);
-            // }
-            // else
-            if (data[x][y].sqdist == 0) {
+            if (isVoronoi(x, y)) {
+                fputc(255, F);
+                fputc(0, F);
+                fputc(0, F);
+            }
+            else if (data[x][y].sqdist == 0) {
                 fputc(0, F);
                 fputc(0, F);
                 fputc(0, F);
             }
             else {
-                float f = 80 + (data[x][y].dist * 20);
+                float f = (data[x][y].dist * 20);
                 if (f > 255) f = 255;
                 if (f < 0) f = 0;
                 c = (unsigned char)f;

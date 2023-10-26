@@ -3,3 +3,11 @@
       traj_type: "sin"
       sin_cycle: 18.85
       sin_amplitude: 4.0
+      direction: -1
+
+
+/sim_robot:
+   ros__parameters:
+      origin_x: 0.0
+      origin_y: 0.0
+      origin_phi: -3.1415
