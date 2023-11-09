@@ -7,6 +7,9 @@
  * Copyright (c) 2023 by dwayne, All Rights Reserved.
  */
 
+#include <memory>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+
 #include "bicycle_kinematics.hpp"
 #include "geometry_msgs/msg/accel_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
@@ -15,11 +18,14 @@
 #include "mpc_msgs/msg/steering_report.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include "sim_robot.h"
+#include "vehicle_model_bicycle_rear_drive_three_state.h"
+
+using namespace VehicleModel;
 
 namespace sim_robot {
 class SimAckermann : public rclcpp::Node {
-private:
+ private:
   /* data */
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_subscriber_;
   rclcpp::Subscription<mpc_msgs::msg::AckermannLateralCommand>::SharedPtr
@@ -38,6 +44,9 @@ private:
   bool is_init_ = false;
 
   std::shared_ptr<sim_robot::BicycleKinematics::State> current_state_ptr_;
+  std::shared_ptr<VehicleModel::VehicleModelInterface> vehicle_model_ptr_;
+  std::shared_ptr<SimRobot> sim_robot_ptr_;
+
   geometry_msgs::msg::Twist::SharedPtr current_cmd_ptr_;
   std::shared_ptr<sim_robot::BicycleKinematics> simulator_ptr_;
 
@@ -45,14 +54,14 @@ private:
   rclcpp::Time last_time_;
 
   /*parameters*/
-  double origin_x_;            //初始点x
-  double origin_y_;            //初始点y
-  double origin_phi_;          //初始航向
-  double pub_period_;          //机器人状态发布间隔
-  double min_sim_time_;        //最小仿真时间
-  double wheel_base_;          //机器人轴距
-  std::string cmd_sub_topic_;  //控制指令接收话题名
-  std::string odom_pub_toipc_; //里程计发布话题名
+  double origin_x_;             // 初始点x
+  double origin_y_;             // 初始点y
+  double origin_phi_;           // 初始航向
+  double pub_period_;           // 机器人状态发布间隔
+  double min_sim_time_;         // 最小仿真时间
+  double wheel_base_;           // 机器人轴距
+  std::string cmd_sub_topic_;   // 控制指令接收话题名
+  std::string odom_pub_toipc_;  // 里程计发布话题名
 
   /**
    * @description  : 声明参数
@@ -82,8 +91,8 @@ private:
    */
   geometry_msgs::msg::Quaternion createQuaternionMsgFromYaw(double yaw);
 
-public:
+ public:
   SimAckermann(std::string name);
   ~SimAckermann();
 };
-} // namespace sim_robot
+}  // namespace sim_robot

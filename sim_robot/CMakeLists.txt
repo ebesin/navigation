@@ -11,18 +11,23 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(mpc_msgs REQUIRED)
+find_package(vehicle_model REQUIRED)
+
 
 # 设置头文件相对路径
 include_directories(
     include
 )
 
-set(sim_robot_library_name sim_robot_lib CACHE INTERNAL "library")
+set(sim_robot_library_name sim_robot_lib)
 set(SIM_ROBOT_SRC
     src/bicycle_kinematics.cpp
     src/sim_ackermann.cpp
@@ -34,8 +39,11 @@ set(SIM_ROBOT_DEPENDENCIES
     geometry_msgs
     rclcpp
     nav_msgs
-    tf2_geometry_msgs
+    vehicle_model
+    tf2
+    tf2_ros
     mpc_msgs
+    tf2_geometry_msgs
 )
 ament_target_dependencies(${sim_robot_library_name}
     ${SIM_ROBOT_DEPENDENCIES}
@@ -48,6 +56,9 @@ set(SIM_EXEC_ROBOT_SRC
 add_executable(${sim_robot_exec_name} ${SIM_EXEC_ROBOT_SRC})
 target_link_libraries(${sim_robot_exec_name}
     ${sim_robot_library_name}
+)
+ament_target_dependencies(${sim_robot_exec_name}
+    ${SIM_ROBOT_DEPENDENCIES}
 )
 
 install(TARGETS ${sim_robot_exec_name}

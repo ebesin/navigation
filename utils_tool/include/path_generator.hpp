@@ -8,15 +8,18 @@
  */
 #pragma once
 
+#include <cmath>
+
 #include "coor_trans.hpp"
 #include "mpc_msgs/msg/trajectory.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include <cmath>
+
 namespace utils_tool {
 using mpc_msgs::msg::Trajectory;
+
 class PathGenerator : public rclcpp::Node {
-private:
+ private:
   /* data */
   rclcpp::Publisher<Trajectory>::SharedPtr trajectory_publisher_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher_;
@@ -37,7 +40,7 @@ private:
   /*运动方向 1-->前进  -1-->后退*/
   int direction_;
 
-public:
+ public:
   PathGenerator(/* args */ std::string name);
   ~PathGenerator();
 
@@ -86,4 +89,4 @@ public:
    */
   void startTimer();
 };
-} // namespace utils_tool
+}  // namespace utils_tool

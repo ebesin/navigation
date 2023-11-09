@@ -9,6 +9,10 @@
 
 #include "sim_ackermann.hpp"
 
+#include <Eigen/src/Core/Matrix.h>
+
+#include <memory>
+
 namespace sim_robot {
 
 SimAckermann::SimAckermann(std::string name) : Node(name) {
@@ -26,6 +30,11 @@ SimAckermann::SimAckermann(std::string name) : Node(name) {
   /*initialize robot current status and simulator*/
   current_state_ptr_ = std::make_shared<sim_robot::BicycleKinematics::State>(
       origin_x_, origin_y_, origin_phi_);
+  vehicle_model_ptr_ =
+      std::make_shared<VehicleModelBicycleRearDriveThreeState>(wheel_base_);
+  Eigen::VectorXd state = Eigen::VectorXd::Zero(vehicle_model_ptr_->getDimX());
+  state << origin_x_, origin_y_, origin_phi_;
+  sim_robot_ptr_ = std::make_shared<SimRobot>(vehicle_model_ptr_, state);
   current_cmd_ptr_ = std::make_shared<geometry_msgs::msg::Twist>();
   simulator_ptr_ = std::make_shared<sim_robot::BicycleKinematics>(
       wheel_base_, rclcpp::Duration::from_seconds(min_sim_time_));
@@ -75,17 +84,20 @@ void SimAckermann::cmdCallback(const geometry_msgs::msg::Twist::SharedPtr cmd) {
   }
   current_time_ = get_clock()->now();
   rclcpp::Duration time_interval = current_time_ - last_time_;
-  if (time_interval > rclcpp::Duration::from_seconds(0.1)) {
+  if (time_interval > rclcpp::Duration::from_seconds(0.2)) {
     RCLCPP_WARN(get_logger(),
                 "%fs has passed since the last command was received",
                 time_interval.seconds());
     last_time_ = get_clock()->now();
     return;
   }
-  simulator_ptr_->calKinematics(
-      *current_state_ptr_,
-      sim_robot::BicycleKinematics::CtrlInput(cmd->linear.x, cmd->angular.z),
-      time_interval);
+
+  Eigen::VectorXd control =
+      Eigen::VectorXd::Zero(vehicle_model_ptr_->getDimU());
+  control << cmd->linear.x, cmd->angular.z;
+  rclcpp::Time before_cal_ = get_clock()->now();
+  sim_robot_ptr_->toNextState(control, time_interval.seconds(), 0.01);
+  rclcpp::Time after_cal_ = get_clock()->now();
   last_time_ = current_time_;
 }
 
@@ -103,10 +115,10 @@ void SimAckermann::timerCallback() {
   nav_msgs::msg::Odometry odom;
   odom.header.frame_id = "map";
   odom.child_frame_id = "odom";
-  odom.pose.pose.position.x = current_state_ptr_->x_;
-  odom.pose.pose.position.y = current_state_ptr_->y_;
+  odom.pose.pose.position.x = sim_robot_ptr_->getCurState()(0);
+  odom.pose.pose.position.y = sim_robot_ptr_->getCurState()(1);
   odom.pose.pose.orientation =
-      createQuaternionMsgFromYaw(current_state_ptr_->phi_);
+      createQuaternionMsgFromYaw(sim_robot_ptr_->getCurState()(2));
   odom.twist.twist = *current_cmd_ptr_;
   odom.twist.twist.angular.z = current_cmd_ptr_->linear.x / wheel_base_ *
                                tan(current_cmd_ptr_->angular.z);
