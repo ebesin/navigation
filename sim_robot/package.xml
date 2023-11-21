@@ -18,6 +18,7 @@
   <depend>nav_msgs</depend>
   <depend>mpc_msgs</depend>
   <depend>vehicle_model</depend>
+  <depend>utils_tool</depend>
   <export>
     <build_type>ament_cmake</build_type>
   </export>

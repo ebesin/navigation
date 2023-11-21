@@ -28,6 +28,8 @@ class SimAckermann : public rclcpp::Node {
  private:
   /* data */
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_subscriber_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr
+      acc_cmd_subscriber_;
   rclcpp::Subscription<mpc_msgs::msg::AckermannLateralCommand>::SharedPtr
       lateral_control_subscriber_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_publisher_;
@@ -62,6 +64,7 @@ class SimAckermann : public rclcpp::Node {
   double wheel_base_;           // 机器人轴距
   std::string cmd_sub_topic_;   // 控制指令接收话题名
   std::string odom_pub_toipc_;  // 里程计发布话题名
+  int state_num_;               // 里程计发布话题名
 
   /**
    * @description  : 声明参数
@@ -75,6 +78,7 @@ class SimAckermann : public rclcpp::Node {
    * @return        {*}
    */
   void cmdCallback(const geometry_msgs::msg::Twist::SharedPtr cmd_vel);
+  void accCmdCallback(const geometry_msgs::msg::Twist::SharedPtr acc_cmd_vel);
   void lateralControlCallback(
       const mpc_msgs::msg::AckermannLateralCommand::SharedPtr cmd_vel);
 

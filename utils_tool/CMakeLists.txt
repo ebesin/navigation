@@ -150,6 +150,10 @@ install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY rviz DESTINATION share/${PROJECT_NAME})
 
+install(DIRECTORY include/
+  DESTINATION include/)
+
+
 
 if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
@@ -164,5 +168,11 @@ if(BUILD_TESTING)
     set(ament_cmake_cpplint_FOUND TRUE)
     ament_lint_auto_find_test_dependencies()
 endif()
+
+ament_export_include_directories(include)
+ament_export_libraries(
+    ${path_generator_library_name}
+)
+ament_export_dependencies(${DEPENDENCIES})
 
 ament_package()

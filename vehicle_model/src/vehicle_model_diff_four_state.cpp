@@ -11,8 +11,9 @@ using namespace VehicleState;
 namespace VehicleModel {
 
 VehicleModelDiffFourState::VehicleModelDiffFourState(/* args */)
-
-    : VehicleModelInterface(4, 2) {}
+    : VehicleModelInterface(4, 2) {
+  m_model_type = VehicleModelType::kDifferential;
+}
 
 void VehicleModelDiffFourState::setCurState(
     const VehicleStateInterface& cur_state) {

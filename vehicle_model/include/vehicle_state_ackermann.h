@@ -8,7 +8,6 @@
 namespace VehicleState {
 class VehicleStateAckermann : public VehicleStateInterface {
  public:
-  nav_msgs::msg::Odometry base_state_;
   ackermann_msgs::msg::AckermannDrive expand_state_;
 };
 }  // namespace VehicleState

@@ -25,6 +25,12 @@ Eigen::VectorXd SimRobot::toNextState(const Eigen::VectorXd& u, double sim_time,
   return getCurState();
 }
 
+Eigen::VectorXd SimRobot::calNextState(const Eigen::VectorXd& u, double time) {
+  Eigen::VectorXd next_state;
+  vehicle_model_ptr_->toNextState(cur_state_, u, time, next_state);
+  return next_state;
+}
+
 void SimRobot::resetState() { cur_state_ = init_state_; }
 
 void SimRobot::setState(const Eigen::VectorXd& state) { cur_state_ = state; }

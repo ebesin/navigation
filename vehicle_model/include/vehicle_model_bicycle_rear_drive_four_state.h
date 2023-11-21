@@ -12,8 +12,10 @@ class VehicleModelBicycleRearDriveFourState : public VehicleModelInterface {
 
   Eigen::VectorXd getConstrainedU(const Eigen::VectorXd& u);
 
-  void setCurState(const VehicleStateInterface& cur_state) override;
-  void setEndState(const VehicleStateInterface& end_state) override;
+  void setCurState(
+      const std::shared_ptr<VehicleStateInterface>& cur_state) override;
+  void setEndState(
+      const std::shared_ptr<VehicleStateInterface>& end_state) override;
 
   int getMatrixA(const Eigen::VectorXd& x, const Eigen::VectorXd& u,
                  const double dt, Eigen::MatrixXd& a) override;

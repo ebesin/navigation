@@ -11,6 +11,7 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(ackermann_msgs REQUIRED)
+find_package(mpc_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
@@ -20,6 +21,7 @@ find_package(Eigen3 REQUIRED)
 include_directories(
     include
 )
+
 
 set(DEPENDENCIES
     std_msgs
@@ -36,8 +38,8 @@ set(DEPENDENCIES
 set(vehicle_model_lib vehicle_model_lib)
 set(VEHICLE_MODEL_SRC
     src/vehicle_model_interface.cpp
-    src/vehicle_model_diff_three_state.cpp
-    src/vehicle_model_diff_four_state.cpp
+    # src/vehicle_model_diff_three_state.cpp
+    # src/vehicle_model_diff_four_state.cpp
     src/vehicle_model_bicycle_rear_drive_five_state.cpp
     src/vehicle_model_bicycle_rear_drive_four_state.cpp
     src/vehicle_model_bicycle_rear_drive_three_state.cpp

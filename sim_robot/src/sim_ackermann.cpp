@@ -13,6 +13,8 @@
 
 #include <memory>
 
+#include "vehicle_model_bicycle_rear_drive_five_state.h"
+
 namespace sim_robot {
 
 SimAckermann::SimAckermann(std::string name) : Node(name) {
@@ -26,12 +28,18 @@ SimAckermann::SimAckermann(std::string name) : Node(name) {
   wheel_base_ = get_parameter("wheel_base").as_double();
   cmd_sub_topic_ = get_parameter("cmd_sub_topic").as_string();
   odom_pub_toipc_ = get_parameter("odom_pub_toipc").as_string();
+  state_num_ = get_parameter("state_num").as_int();
 
   /*initialize robot current status and simulator*/
   current_state_ptr_ = std::make_shared<sim_robot::BicycleKinematics::State>(
       origin_x_, origin_y_, origin_phi_);
-  vehicle_model_ptr_ =
-      std::make_shared<VehicleModelBicycleRearDriveThreeState>(wheel_base_);
+  if (state_num_ == 3) {
+    vehicle_model_ptr_ =
+        std::make_shared<VehicleModelBicycleRearDriveThreeState>(wheel_base_);
+  } else if (state_num_ == 5) {
+    vehicle_model_ptr_ =
+        std::make_shared<VehicleModelBicycleRearDriveFiveState>(wheel_base_);
+  }
   Eigen::VectorXd state = Eigen::VectorXd::Zero(vehicle_model_ptr_->getDimX());
   state << origin_x_, origin_y_, origin_phi_;
   sim_robot_ptr_ = std::make_shared<SimRobot>(vehicle_model_ptr_, state);
@@ -43,6 +51,9 @@ SimAckermann::SimAckermann(std::string name) : Node(name) {
   cmd_subscriber_ = create_subscription<geometry_msgs::msg::Twist>(
       "cmd_vel", rclcpp::SystemDefaultsQoS(),
       std::bind(&SimAckermann::cmdCallback, this, std::placeholders::_1));
+  acc_cmd_subscriber_ = create_subscription<geometry_msgs::msg::Twist>(
+      "acc_cmd_vel", rclcpp::SystemDefaultsQoS(),
+      std::bind(&SimAckermann::accCmdCallback, this, std::placeholders::_1));
   lateral_control_subscriber_ =
       create_subscription<mpc_msgs::msg::AckermannLateralCommand>(
           "/mpc_controller/output/control_cmd", rclcpp::SystemDefaultsQoS(),
@@ -72,7 +83,19 @@ SimAckermann::SimAckermann(std::string name) : Node(name) {
 
 SimAckermann::~SimAckermann() {}
 
+void SimAckermann::accCmdCallback(
+    const geometry_msgs::msg::Twist::SharedPtr acc_cmd) {
+  if (state_num_ != 5) {
+    RCLCPP_WARN(get_logger(), "the number of state is not 5 !");
+    return;
+  }
+}
+
 void SimAckermann::cmdCallback(const geometry_msgs::msg::Twist::SharedPtr cmd) {
+  if (state_num_ != 3) {
+    RCLCPP_WARN(get_logger(), "the number of state is not 3 !");
+    return;
+  }
   if (std::abs(cmd->angular.z) > 0.4363)
     cmd->angular.z = cmd->angular.z > 0 ? 0.4363 : -0.4363;
 
@@ -115,13 +138,15 @@ void SimAckermann::timerCallback() {
   nav_msgs::msg::Odometry odom;
   odom.header.frame_id = "map";
   odom.child_frame_id = "odom";
+  odom.header.stamp = get_clock()->now();
   odom.pose.pose.position.x = sim_robot_ptr_->getCurState()(0);
   odom.pose.pose.position.y = sim_robot_ptr_->getCurState()(1);
   odom.pose.pose.orientation =
       createQuaternionMsgFromYaw(sim_robot_ptr_->getCurState()(2));
   odom.twist.twist = *current_cmd_ptr_;
-  odom.twist.twist.angular.z = current_cmd_ptr_->linear.x / wheel_base_ *
-                               tan(current_cmd_ptr_->angular.z);
+  // odom.twist.twist.angular.z = current_cmd_ptr_->linear.x / wheel_base_ *
+  //                              tan(current_cmd_ptr_->angular.z);
+  odom.twist.twist.angular.z = current_cmd_ptr_->angular.z;
   // RCLCPP_INFO_STREAM(get_logger(),
   //                    "x: " << current_state_ptr_->x_ << " y:" <<
   //                    current_state_ptr_->y_ << " phi:" <<
@@ -149,11 +174,12 @@ void SimAckermann::declareParameter() {
   declare_parameter("origin_x", 0.0);
   declare_parameter("origin_y", 0.0);
   declare_parameter("origin_phi", 0.0);
-  declare_parameter("pub_period", 0.02);
+  declare_parameter("pub_period", 0.001);
   declare_parameter("min_sim_time", 0.001);
   declare_parameter("wheel_base", 0.65);
   declare_parameter("cmd_sub_topic", "cmd_vel");
   declare_parameter("odom_pub_toipc", "odom");
+  declare_parameter("stata_num", 5);
 }
 
 }  // namespace sim_robot

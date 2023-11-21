@@ -7,8 +7,6 @@
 namespace VehicleState {
 class VehicleStateDiff : public VehicleStateInterface {
  public:
-  nav_msgs::msg::Odometry base_state_;
-
   ~VehicleStateDiff() {}
 };
 }  // namespace VehicleState

@@ -3,6 +3,7 @@
 #include <tf2/utils.h>
 
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "vehicle_model_interface.h"
 #include "vehicle_state_diff.h"
 
 using namespace VehicleState;
@@ -10,7 +11,9 @@ using namespace VehicleState;
 namespace VehicleModel {
 
 VehicleModelDiffThreeState::VehicleModelDiffThreeState(/* args */)
-    : VehicleModelInterface(3, 2) {}
+    : VehicleModelInterface(3, 2) {
+  m_model_type = VehicleModelType::kDifferential;
+}
 
 void VehicleModelDiffThreeState::setCurState(
     const VehicleStateInterface& cur_state) {

@@ -9,6 +9,8 @@
 #pragma once
 
 #include <cmath>
+#include <nav_msgs/msg/detail/path__struct.hpp>
+#include <string>
 
 #include "coor_trans.hpp"
 #include "mpc_msgs/msg/trajectory.hpp"
@@ -32,6 +34,9 @@ class PathGenerator : public rclcpp::Node {
   double wheel_base_;
   double cycle_;
   double amplitude_;
+  bool generate_from_file_{false};
+  std::string path_folder_;
+  std::string path_filename_;
 
   double path_length_;
   /*路径方向，仅对直线有用*/
@@ -49,7 +54,7 @@ class PathGenerator : public rclcpp::Node {
    * @return        {*}
    */
   // todo 目前只考虑了前进，后续需要考虑倒车
-  void perfectPath(Trajectory &traj, double velocity, double wheel_base,
+  void perfectPath(Trajectory& traj, double velocity, double wheel_base,
                    int direction);
 
   /**
@@ -88,5 +93,12 @@ class PathGenerator : public rclcpp::Node {
    * @return        {*}
    */
   void startTimer();
+
+  void generatePathFromFile(const std::string& file_name);
+
+  void loadPathFromFile(const std::string& file_name,
+                        nav_msgs::msg::Path& path);
+
+  void declareParameter();
 };
 }  // namespace utils_tool

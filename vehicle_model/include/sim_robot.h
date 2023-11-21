@@ -1,3 +1,4 @@
+#pragma once
 #include <memory>
 
 #include "vehicle_model_interface.h"
@@ -19,6 +20,8 @@ class SimRobot {
 
   Eigen::VectorXd toNextState(const Eigen::VectorXd& u, double sim_time,
                               double dt);
+
+  Eigen::VectorXd calNextState(const Eigen::VectorXd& u, double time);
 
   void resetState();
 

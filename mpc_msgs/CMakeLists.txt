@@ -34,6 +34,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/PathWithLaneId.msg"
   "msg/VehicleOdometry.msg"
   "msg/OperationModeState.msg"
+  "msg/VehicleState.msg"
   DEPENDENCIES builtin_interfaces geometry_msgs std_msgs
 )
 

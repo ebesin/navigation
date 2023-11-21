@@ -13,13 +13,16 @@ namespace VehicleModel {
 
 VehicleModelBicycleRearDriveFourState::VehicleModelBicycleRearDriveFourState(
     const double& wheel_base)
-    : VehicleModelInterface(4, 2, wheel_base) {}
+    : VehicleModelInterface(4, 2, wheel_base) {
+  m_model_type = VehicleModelType::kAckermann;
+}
 
 void VehicleModelBicycleRearDriveFourState::setCurState(
-    const VehicleStateInterface& cur_state) {
-  m_cur_state_vec = Eigen::VectorXd::Zero(4);
-  VehicleStateInterface state = cur_state;
-  auto state_ptr = dynamic_cast<VehicleStateAckermann*>(&state);
+    const std::shared_ptr<VehicleStateInterface>& cur_state) {
+  m_cur_state_vec = Eigen::VectorXd::Zero(m_dim_x);
+  // VehicleStateInterface state = cur_state;
+  std::shared_ptr<VehicleStateAckermann> state_ptr =
+      std::dynamic_pointer_cast<VehicleStateAckermann>(cur_state);
   m_cur_state_vec << state_ptr->base_state_.pose.pose.position.x,
       state_ptr->base_state_.pose.pose.position.y,
       tf2::getYaw(state_ptr->base_state_.pose.pose.orientation),
@@ -28,11 +31,11 @@ void VehicleModelBicycleRearDriveFourState::setCurState(
 }
 
 void VehicleModelBicycleRearDriveFourState::setEndState(
-    const VehicleStateInterface& end_state) {
-  m_end_state_vec = Eigen::VectorXd::Zero(4);
-  VehicleStateInterface state = end_state;
-  auto state_ptr = dynamic_cast<VehicleStateAckermann*>(&state);
-  m_cur_state_vec << state_ptr->base_state_.pose.pose.position.x,
+    const std::shared_ptr<VehicleStateInterface>& end_state) {
+  m_end_state_vec = Eigen::VectorXd::Zero(m_dim_x);
+  std::shared_ptr<VehicleStateAckermann> state_ptr =
+      std::dynamic_pointer_cast<VehicleStateAckermann>(end_state);
+  m_end_state_vec << state_ptr->base_state_.pose.pose.position.x,
       state_ptr->base_state_.pose.pose.position.y,
       tf2::getYaw(state_ptr->base_state_.pose.pose.orientation),
       state_ptr->base_state_.twist.twist.linear.x;
@@ -56,7 +59,7 @@ int VehicleModelBicycleRearDriveFourState::getMatrixB(const Eigen::VectorXd& x,
                                                       const double dt,
                                                       Eigen::MatrixXd& b) {
   if (x.size() != m_dim_x || u.size() != m_dim_u) return -1;
-  b = Eigen::MatrixXd::Identity(m_dim_x, m_dim_u);
+  b = Eigen::MatrixXd::Zero(m_dim_x, m_dim_u);
   b(0, 0) = dt * cos(x(2));
   b(1, 0) = dt * sin(x(2));
   b(2, 0) = dt * tan(x(3)) / m_wheelbase;

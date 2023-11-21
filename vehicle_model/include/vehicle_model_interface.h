@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #pragma once
 
 #include <Eigen/Core>
@@ -11,14 +12,22 @@ using namespace VehicleState;
 
 namespace VehicleModel {
 
+enum class VehicleModelType {
+  kDifferential,
+  kAckermann,
+};
+
 class VehicleModelInterface {
  protected:
   const int m_dim_x;   //!< @brief dimension of state x
   const int m_dim_u;   //!< @brief dimension of input u
   double m_curvature;  //!< @brief curvature on the linearized point on path
   double m_wheelbase;  //!< @brief wheelbase of the vehicle [m]
+  VehicleModelType m_model_type;
   VehicleStateInterface m_cur_state;
   VehicleStateInterface m_end_state;
+  VehicleStateInterface m_max_state;
+  VehicleStateInterface m_min_state;
   Eigen::VectorXd m_cur_state_vec;
   Eigen::VectorXd m_end_state_vec;
   bool has_constrain{false};
@@ -50,19 +59,19 @@ class VehicleModelInterface {
    * @brief get state x dimension
    * @return state dimension
    */
-  int getDimX();
+  int getDimX() const;
 
   /**
    * @brief get input u dimension
    * @return input dimension
    */
-  int getDimU();
+  int getDimU() const;
 
   /**
    * @brief get wheelbase of the vehicle
    * @return wheelbase value [m]
    */
-  double getWheelbase();
+  double getWheelbase() const;
 
   /**
    * @brief set velocity
@@ -87,27 +96,44 @@ class VehicleModelInterface {
    * @brief set current state
    * @param [in] cur_state vehicle current state
    */
-  virtual void setCurState(const VehicleStateInterface& cur_state);
+  virtual void setCurState(
+      const std::shared_ptr<VehicleStateInterface>& cur_state);
 
+  void setCurStateVec(const Eigen::VectorXd& cur_state);
   /**
    * @brief get current state vector
    */
-  Eigen::VectorXd getCurStateVec();
+  Eigen::VectorXd getCurStateVec() const;
 
-  VehicleStateInterface getCurState();
+  VehicleStateInterface getCurState() const;
 
   /**
    * @brief set current state
    * @param [in] cur_state vehicle current state
    */
-  virtual void setEndState(const VehicleStateInterface& end_state);
+  virtual void setEndState(
+      const std::shared_ptr<VehicleStateInterface>& cur_state);
 
   /**
    * @brief get current state vector
    */
-  Eigen::VectorXd getEndStateVec();
+  Eigen::VectorXd getEndStateVec() const;
 
-  VehicleStateInterface getEndState();
+  VehicleStateInterface getEndState() const;
+
+  VehicleModelType getModelType() const { return m_model_type; }
+
+  void setMaxState(const std::shared_ptr<VehicleStateInterface>& state) {
+    m_max_state = *state;
+  }
+
+  VehicleStateInterface getMaxState() const { return m_max_state; }
+
+  void setMinState(const std::shared_ptr<VehicleStateInterface>& state) {
+    m_min_state = *state;
+  }
+
+  VehicleStateInterface getMinState() const { return m_min_state; }
 
   /**
    * @brief calculate discrete model matrix of x_k+1 = a_d * xk + b_d * uk

@@ -20,6 +20,7 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(mpc_msgs REQUIRED)
 find_package(vehicle_model REQUIRED)
+find_package(utils_tool REQUIRED)
 
 
 # 设置头文件相对路径
@@ -31,6 +32,7 @@ set(sim_robot_library_name sim_robot_lib)
 set(SIM_ROBOT_SRC
     src/bicycle_kinematics.cpp
     src/sim_ackermann.cpp
+    src/sim_vehicle.cpp
 )
 add_library(${sim_robot_library_name} SHARED
     ${SIM_ROBOT_SRC}
@@ -43,6 +45,7 @@ set(SIM_ROBOT_DEPENDENCIES
     tf2
     tf2_ros
     mpc_msgs
+    utils_tool
     tf2_geometry_msgs
 )
 ament_target_dependencies(${sim_robot_library_name}

@@ -8,40 +8,44 @@ VehicleModelInterface::VehicleModelInterface(int dim_x, int dim_u,
 VehicleModelInterface::VehicleModelInterface(int dim_x, int dim_u)
     : m_dim_x(dim_x), m_dim_u(dim_u), m_wheelbase(0) {}
 
-int VehicleModelInterface::getDimX() { return m_dim_x; }
+int VehicleModelInterface::getDimX() const { return m_dim_x; }
 
-int VehicleModelInterface::getDimU() { return m_dim_u; }
+int VehicleModelInterface::getDimU() const { return m_dim_u; }
 
-double VehicleModelInterface::getWheelbase() { return m_wheelbase; }
+double VehicleModelInterface::getWheelbase() const { return m_wheelbase; }
 
 void VehicleModelInterface::setCurvature(double curvature) {
   m_curvature = curvature;
 }
 
-Eigen::VectorXd VehicleModelInterface::getCurStateVec() {
+void VehicleModelInterface::setCurStateVec(const Eigen::VectorXd& cur_state) {
+  m_cur_state_vec = cur_state;
+}
+
+Eigen::VectorXd VehicleModelInterface::getCurStateVec() const {
   return m_cur_state_vec;
 }
 
-Eigen::VectorXd VehicleModelInterface::getEndStateVec() {
+Eigen::VectorXd VehicleModelInterface::getEndStateVec() const {
   return m_end_state_vec;
 }
 
-VehicleStateInterface VehicleModelInterface::getCurState() {
+VehicleStateInterface VehicleModelInterface::getCurState() const {
   return m_cur_state;
 }
 
-VehicleStateInterface VehicleModelInterface::getEndState() {
+VehicleStateInterface VehicleModelInterface::getEndState() const {
   return m_end_state;
 }
 
 void VehicleModelInterface::setCurState(
-    const VehicleStateInterface& cur_state) {
-  m_cur_state = cur_state;
+    const std::shared_ptr<VehicleStateInterface>& cur_state) {
+  m_cur_state = *cur_state;
 }
 
 void VehicleModelInterface::setEndState(
-    const VehicleStateInterface& end_state) {
-  m_end_state = end_state;
+    const std::shared_ptr<VehicleStateInterface>& cur_state) {
+  m_end_state = *cur_state;
 }
 
 bool VehicleModelInterface::setConstrain(const Eigen::VectorXd& u_min,
