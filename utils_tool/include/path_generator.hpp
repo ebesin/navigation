@@ -9,10 +9,11 @@
 #pragma once
 
 #include <cmath>
+#include <geometry_msgs/msg/detail/pose_stamped__struct.hpp>
 #include <nav_msgs/msg/detail/path__struct.hpp>
 #include <string>
 
-#include "coor_trans.hpp"
+#include "coor_tools.h"
 #include "mpc_msgs/msg/trajectory.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -37,6 +38,7 @@ class PathGenerator : public rclcpp::Node {
   bool generate_from_file_{false};
   std::string path_folder_;
   std::string path_filename_;
+  int generate_mode_;
 
   double path_length_;
   /*路径方向，仅对直线有用*/
@@ -75,6 +77,10 @@ class PathGenerator : public rclcpp::Node {
    * @return        {*}
    */
   void generateLineCurve(double length, double heading, int direction);
+
+  void generateBezierCurve(const geometry_msgs::msg::PoseStamped& begin_pose,
+                           const geometry_msgs::msg::PoseStamped& end_pose,
+                           const double& step);
 
   /**
    * @description  : 生成圆形路径

@@ -231,8 +231,7 @@ void SimVehicle::declareParameter() {
   /*get parameters*/
   origin_x_ = get_parameter("origin_x").as_double();
   origin_y_ = get_parameter("origin_y").as_double();
-  origin_phi_ =
-      utils_tool::angle2Radian(get_parameter("origin_phi").as_double());
+  origin_phi_ = utils_tool::deg2Rad(get_parameter("origin_phi").as_double());
   pub_period_ = get_parameter("pub_period").as_double();
   min_sim_time_ = get_parameter("min_sim_time").as_double();
   wheel_base_ = get_parameter("wheel_base").as_double();

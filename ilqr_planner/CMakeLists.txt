@@ -13,6 +13,7 @@ find_package(vehicle_model REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(mpc_msgs REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(utils_tool REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(GTest)
@@ -31,6 +32,7 @@ set(DEPENDENCIES
     mpc_msgs
     tf2
     tf2_geometry_msgs
+    utils_tool
     Eigen3
 )
 

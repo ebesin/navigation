@@ -24,6 +24,27 @@ include_directories(
     include
 )
 
+# path_generator
+set(path_generator_library_name path_generator_lib)
+set(PATH_GENERATOR_SRC
+    src/coor_tools.cpp
+    src/path_generator.cpp
+    src/bezier_plan.cpp
+)
+add_library(${path_generator_library_name} SHARED
+    ${PATH_GENERATOR_SRC}
+)
+set(PATH_GENERATOR_DEPENDENCIES
+    geometry_msgs
+    rclcpp
+    nav_msgs
+    visualization_msgs
+    tf2_geometry_msgs
+    mpc_msgs
+)
+ament_target_dependencies(${path_generator_library_name}
+    ${PATH_GENERATOR_DEPENDENCIES}
+)
 
 # visualization_tool
 set(visualization_tool_library_name visualization_tool_lib)
@@ -57,28 +78,10 @@ ament_target_dependencies(${visualization_tool_exec_name}
 )
 target_link_libraries(${visualization_tool_exec_name}
     ${visualization_tool_library_name}
+    ${path_generator_library_name}
 )
 
-# path_generator
-set(path_generator_library_name path_generator_lib)
-set(PATH_GENERATOR_SRC
-    src/path_generator.cpp
-)
-add_library(${path_generator_library_name} SHARED
-    ${PATH_GENERATOR_SRC}
-)
-set(PATH_GENERATOR_DEPENDENCIES
-    geometry_msgs
-    rclcpp
-    nav_msgs
-    visualization_msgs
-    tf2_geometry_msgs
-    mpc_msgs
-)
-ament_target_dependencies(${path_generator_library_name}
-    ${PATH_GENERATOR_DEPENDENCIES}
-)
-
+# exec
 set(path_generator_exec_name path_generator_node)
 set(PATH_GENERATOR_EXEC_SRC
     src/path_generator_node.cpp
@@ -99,7 +102,7 @@ target_link_libraries(${path_generator_exec_name}
     ${path_generator_library_name}
 )
 
-
+# test
 set(util_tool_test_exec_name util_tool_test)
 set(UTIL_TOOL_TEST_EXEC_SRC
     test/test_coor_trans.cpp
@@ -118,6 +121,7 @@ ament_target_dependencies(${util_tool_test_exec_name}
     ${UTIL_TOOL_TEST_EXEC_DEPENDENCIES}
 )
 target_link_libraries(${util_tool_test_exec_name}
+    ${path_generator_library_name}
     gtest
 )
 

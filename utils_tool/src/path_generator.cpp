@@ -9,6 +9,7 @@
 
 #include "path_generator.hpp"
 
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
@@ -17,8 +18,8 @@
 #include <rclcpp/logging.hpp>
 #include <string>
 
-#include "coor_tools.hpp"
-#include "coor_trans.hpp"
+#include "bezier_plan.h"
+#include "coor_tools.h"
 
 namespace utils_tool {
 PathGenerator::PathGenerator(std::string name) : Node(name) {
@@ -28,31 +29,41 @@ PathGenerator::PathGenerator(std::string name) : Node(name) {
                                    rclcpp::SystemDefaultsQoS());
   path_publisher_ = create_publisher<nav_msgs::msg::Path>(
       "/generate_path", rclcpp::SystemDefaultsQoS());
-  if (generate_from_file_) {
-    generatePathFromFile(path_folder_ + "/" + path_filename_);
-  } else {
-    if (traj_type_ == std::string("line")) {
-      declare_parameter("path_length", 20.0);
-      declare_parameter("path_heading", 0.0);
-      path_length_ = get_parameter("path_length").as_double();
-      path_heading_ =
-          utils_tool::angle2Radian(get_parameter("path_heading").as_double());
-      generateLineCurve(path_length_, path_heading_, direction_);
-    } else if (traj_type_ == std::string("sin")) {
-      declare_parameter("path_length", 20.0);
-      declare_parameter("path_heading", 0.0);
-      declare_parameter("sin_cycle", 4 * M_PI);
-      declare_parameter("sin_amplitude", 4.0);
-      path_length_ = get_parameter("path_length").as_double();
-      path_heading_ =
-          utils_tool::angle2Radian(get_parameter("path_heading").as_double());
-      cycle_ = get_parameter("sin_cycle").as_double();
-      amplitude_ = get_parameter("sin_amplitude").as_double();
-      generateSinCurve(path_length_, path_heading_, cycle_, amplitude_,
-                       direction_);
-    } else {
-      RCLCPP_ERROR(get_logger(), "no such type of curve!!!");
-    }
+  switch (generate_mode_) {
+    case 1:
+      generatePathFromFile(path_folder_ + "/" + path_filename_);
+      break;
+    case 2:
+      if (traj_type_ == std::string("line")) {
+        declare_parameter("path_length", 20.0);
+        declare_parameter("path_heading", 0.0);
+        path_length_ = get_parameter("path_length").as_double();
+        path_heading_ =
+            utils_tool::deg2Rad(get_parameter("path_heading").as_double());
+        generateLineCurve(path_length_, path_heading_, direction_);
+      } else if (traj_type_ == std::string("sin")) {
+        declare_parameter("path_length", 20.0);
+        declare_parameter("path_heading", 0.0);
+        declare_parameter("sin_cycle", 4 * M_PI);
+        declare_parameter("sin_amplitude", 4.0);
+        path_length_ = get_parameter("path_length").as_double();
+        path_heading_ =
+            utils_tool::deg2Rad(get_parameter("path_heading").as_double());
+        cycle_ = get_parameter("sin_cycle").as_double();
+        amplitude_ = get_parameter("sin_amplitude").as_double();
+        generateSinCurve(path_length_, path_heading_, cycle_, amplitude_,
+                         direction_);
+      } else {
+        RCLCPP_ERROR(get_logger(), "no such type of curve!!!");
+      }
+      break;
+    case 3:
+      geometry_msgs::msg::PoseStamped begin_pose;
+      geometry_msgs::msg::PoseStamped end_pose;
+      end_pose.pose.position.x = 3;
+      end_pose.pose.position.y = 3;
+      generateBezierCurve(begin_pose, end_pose, 0.05);
+      break;
   }
 }
 
@@ -198,6 +209,14 @@ void PathGenerator::generateLineCurve(double length, double heading,
 
 void PathGenerator::generateCircleCurve() {}
 
+void PathGenerator::generateBezierCurve(
+    const geometry_msgs::msg::PoseStamped& begin_pose,
+    const geometry_msgs::msg::PoseStamped& end_pose, const double& step) {
+  double dist = doBezierPlan(begin_pose, end_pose, path_, step);
+  path_.header.frame_id = "map";
+  startTimer();
+}
+
 void PathGenerator::timerCallback() {
   trajectory_publisher_->publish(traj_);
   path_publisher_->publish(path_);
@@ -244,13 +263,20 @@ void PathGenerator::loadPathFromFile(const std::string& file_name,
         case 1:
           pose.pose.position.y = atof(s.c_str());
           break;
-        case 2:
-          pose.pose.orientation = createQuaternionMsgFromYaw(atof(s.c_str()));
-          break;
       }
     }
     path.poses.push_back(pose);
   }
+  for (int i = 0; i < path.poses.size() - 1; i++) {
+    path.poses.at(i).pose.orientation =
+        createQuaternionMsgFromYaw(atan2(path.poses.at(i + 1).pose.position.y -
+                                             path.poses.at(i).pose.position.y,
+                                         path.poses.at(i + 1).pose.position.x -
+                                             path.poses.at(i).pose.position.x) +
+                                   (direction_ == 1 ? 0 : 3.14159));
+  }
+  path.poses.at(path.poses.size() - 1).pose.orientation =
+      path.poses.at(path.poses.size() - 2).pose.orientation;
 }
 
 void PathGenerator::declareParameter() {
@@ -260,6 +286,7 @@ void PathGenerator::declareParameter() {
   declare_parameter("wheel_base", 0.65);
   declare_parameter("direction", 1);
   declare_parameter("generate_from_file", false);
+  declare_parameter("generate_mode", 1);
   declare_parameter("path_folder", std::string(""));
   declare_parameter("path_filename", std::string(""));
 
@@ -269,6 +296,7 @@ void PathGenerator::declareParameter() {
   get_parameter_or("wheel_base", wheel_base_, 0.65);
   get_parameter_or("direction", direction_, 1);
   get_parameter_or("generate_from_file", generate_from_file_, false);
+  get_parameter_or("generate_mode", generate_mode_, 1);
   get_parameter_or("path_folder", path_folder_, std::string(""));
   get_parameter_or("path_filename", path_filename_, std::string(""));
 }

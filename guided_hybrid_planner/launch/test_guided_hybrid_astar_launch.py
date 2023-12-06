@@ -55,13 +55,13 @@ def generate_launch_description():
     declare_map_yaml_cmd = DeclareLaunchArgument(
         'map',
         default_value=os.path.join(
-            guided_hybrid_astar_dir, 'map', 'orchard_map.yaml'),
+            guided_hybrid_astar_dir, 'map', 'sim_orchard3.yaml'),
         description='Full path to map file to load')
 
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
         'rviz_config',
         default_value=os.path.join(
-            guided_hybrid_astar_dir, 'rviz', 'test_guided_hybrid.rviz'))
+            guided_hybrid_astar_dir, 'rviz', 'test_guided_hybrid2.rviz'))
 
     declare_namespace_cmd = DeclareLaunchArgument(
         'namespace',

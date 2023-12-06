@@ -7,7 +7,8 @@ global_costmap:
       robot_base_frame: base_link
       use_sim_time: True
       # robot_radius: 0.32
-      footprint: "[ [-0.05, 0.15], [0.40,0.15], [0.40,-0.15], [0.15,-0.15], [-0.05,-0.15] ]"
+      # footprint: "[ [-0.05, 0.15], [0.40,0.15], [0.40,-0.15], [0.15,-0.15], [-0.05,-0.15] ]"
+      footprint: "[ [-0.05, 0.36], [0.65,0.36], [0.65,-0.36], [0.05,-0.36] ]"
       footprint_padding: 0.05
 
       resolution: 0.05
@@ -46,15 +47,15 @@ global_costmap:
 map_server:
   ros__parameters:
     use_sim_time: True
-    yaml_filename: "orchard_map.yaml"
+    yaml_filename: "sim_orchard3.yaml"
 
 guided_hybrid_planner_flow:
   ros__parameters:
     shot_distance: 0.5
     steer_angle_segment_size: 3
-    wheel_base: 0.3429
+    wheel_base: 0.65
     cost_penalty: 3.0
-    reverse_penalty: 5.0
+    reverse_penalty: 2.0
     steering_change_penalty: 2.0
     steering_penalty: 1.2
     max_steer_angle: 27.0

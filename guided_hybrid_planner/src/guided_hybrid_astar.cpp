@@ -9,6 +9,8 @@
 
 #include "guided_hybrid_astar.hpp"
 
+#include "type.hpp"
+
 namespace guided_hybrid_a_star {
 GuidedHybridAStar::GuidedHybridAStar(nav2_costmap_2d::Costmap2D *costmap,
                                      const SearchInfo &serch_info) {
@@ -62,8 +64,7 @@ void GuidedHybridAStar::clearTempData() {
 
 unsigned int GuidedHybridAStar::getAngleIndex(const double heading) const {
   int angle_index = static_cast<int>(heading / unit_angle_);
-  if (angle_index < 0)
-    angle_index += serch_info_.angle_segment_size;
+  if (angle_index < 0) angle_index += serch_info_.angle_segment_size;
   if (angle_index >= serch_info_.angle_segment_size)
     angle_index -= serch_info_.angle_segment_size;
   return angle_index;
@@ -119,8 +120,7 @@ void GuidedHybridAStar::initMotion() {
   forward_projections_.clear();
   backward_projections_.clear();
   int steer_angle_segment_size = serch_info_.steer_angle_segment_size;
-  if (steer_angle_segment_size % 2 == 0)
-    steer_angle_segment_size += 1;
+  if (steer_angle_segment_size % 2 == 0) steer_angle_segment_size += 1;
 
   double segment_angle = static_cast<double>(2 * serch_info_.max_steer_angle /
                                              (steer_angle_segment_size - 1));
@@ -156,10 +156,8 @@ bool GuidedHybridAStar::getFrontNeighbor(const StateNodePtr &current_node,
 
   MotionPose pose = forward_projections_[neighbour_index];
   double new_heading = current_heading + pose._theta;
-  if (new_heading < 0.0)
-    new_heading += 2 * M_PI;
-  if (new_heading > 2 * M_PI)
-    new_heading -= 2 * M_PI;
+  if (new_heading < 0.0) new_heading += 2 * M_PI;
+  if (new_heading > 2 * M_PI) new_heading -= 2 * M_PI;
   Vec3d next_state;
   // 旋转矩阵
   Eigen::Matrix2d rotation;
@@ -190,10 +188,8 @@ bool GuidedHybridAStar::getBackNeighbor(const StateNodePtr &current_node,
 
   MotionPose pose = backward_projections_[neighbour_index];
   double new_heading = current_heading + pose._theta;
-  if (new_heading < 0.0)
-    new_heading += 2 * M_PI;
-  if (new_heading > 2 * M_PI)
-    new_heading -= 2 * M_PI;
+  if (new_heading < 0.0) new_heading += 2 * M_PI;
+  if (new_heading > 2 * M_PI) new_heading -= 2 * M_PI;
   Vec3d next_state;
   // 旋转矩阵
   Eigen::Matrix2d rotation;
@@ -224,9 +220,9 @@ inline float distanceHeuristic2D(const unsigned int idx,
   return std::sqrt(dx * dx + dy * dy);
 }
 
-double
-GuidedHybridAStar::computeTrajCost(const StateNodePtr &current_node_ptr,
-                                   const StateNodePtr &neighbor_node_ptr) {
+double GuidedHybridAStar::computeTrajCost(
+    const StateNodePtr &current_node_ptr,
+    const StateNodePtr &neighbor_node_ptr) {
   unsigned int current_angle_index =
       getAngleIndex(current_node_ptr->getState().z());
   unsigned int neighbor_angle_index =
@@ -240,12 +236,18 @@ GuidedHybridAStar::computeTrajCost(const StateNodePtr &current_node_ptr,
   float steering_penalty = ((neighbor_angle_index - current_angle_index) == 0)
                                ? 1
                                : serch_info_.steering_penalty;
-  float reverse_penalty = (neighbor_node_ptr->getDirection() == FORWARD)
-                              ? 1
-                              : serch_info_.reverse_penalty;
+  float reverse_penalty =
+      (neighbor_node_ptr->getDirection() == DIRECTION::FORWARD)
+          ? 1
+          : serch_info_.reverse_penalty;
+
+  float change_direction_penalty =
+      (neighbor_node_ptr->getDirection() == current_node_ptr->getDirection())
+          ? 1
+          : serch_info_.change_direction_penalty;
 
   return (voronio_cost + 1) * segment_length * reverse_penalty *
-         steering_penalty * steering_change_penalty;
+         steering_penalty * steering_change_penalty * change_direction_penalty;
   // return segment_length * reverse_penalty * steering_penalty *
   // steering_change_penalty;
 }
@@ -324,7 +326,8 @@ void GuidedHybridAStar::resetObstacleHeuristic(
 
   const unsigned int goal_index =
       floor(goal_y / 2.0) * size_x + floor(goal_x / 2.0);
-  std::cout << blue << flag << "goal_index:" << goal_index << std::endl;
+  RCLCPP_INFO_STREAM(logger_, blue << flag << "goal_index:" << goal_index);
+  // std::cout << blue << flag << "goal_index:" << goal_index << std::endl;
   obstacle_heuristic_queue_.emplace_back(
       distanceHeuristic2D(goal_index, size_x, start_x, start_y), goal_index);
   obstacle_heuristic_lookup_table_[goal_index] = -0.00001f;
@@ -365,13 +368,13 @@ double GuidedHybridAStar::computeObstacleHeuristicCost(
   unsigned int new_idx = 0;
 
   const std::vector<int> neighborhood = {1,
-                                         -1, // left right
+                                         -1,  // left right
                                          size_x_int,
-                                         -size_x_int, // up down
+                                         -size_x_int,  // up down
                                          size_x_int + 1,
-                                         size_x_int - 1, // upper diagonals
+                                         size_x_int - 1,  // upper diagonals
                                          -size_x_int + 1,
-                                         -size_x_int - 1}; // lower diagonals
+                                         -size_x_int - 1};  // lower diagonals
 
   while (!obstacle_heuristic_queue_.empty()) {
     // 找到队列中代价值最小的节点index并弹出队列
@@ -438,9 +441,8 @@ double GuidedHybridAStar::computeObstacleHeuristicCost(
   return abs(2.0 * requested_node_cost);
 }
 
-double
-GuidedHybridAStar::computeHeuristicCost(const StateNodePtr &current_node,
-                                        const StateNodePtr &target_node) {
+double GuidedHybridAStar::computeHeuristicCost(
+    const StateNodePtr &current_node, const StateNodePtr &target_node) {
   return std::max(computeDistanceHeuristicCost(current_node, target_node),
                   computeObstacleHeuristicCost(current_node, target_node));
   // return computeDistanceHeuristicCost(current_node, target_node);
@@ -460,8 +462,10 @@ bool GuidedHybridAStar::analyticExpansions(const StateNodePtr &current_node,
       return false;
     };
   rs_path_poses.erase(rs_path_poses.begin());
+  ;
   target_node->setIntermediateStates(rs_path_poses);
   target_node->setParentNode(current_node);
+  return true;
 }
 
 void GuidedHybridAStar::generateVoronoiMap() {
@@ -493,17 +497,19 @@ void GuidedHybridAStar::generateVoronoiMap() {
   voronoi_.update();
   voronoi_.prune();
 
-  voronoi_.visualize("/home/dwayne/workspace/navigation/nav2_ws/src/navigation/"
-                     "guided_hybrid_planner/map/retult.pgm");
+  voronoi_.visualize(
+      "/home/dwayne/workspace/navigation/nav2_ws/src/navigation/"
+      "guided_hybrid_planner/map/retult.pgm");
 }
 
 float GuidedHybridAStar::getVoronoiCost(int m_x, int m_y) {
   // return (8 - voronoi_.getDistance(m_x, m_y));
   // if (voronoi_.getDistance(m_x, m_y) >= 4)
-  if (voronoi_.isVoronoi(m_x, m_y))
-    return 0;
-  else
-    return ((8 - voronoi_.getDistance(m_x, m_y)));
+  // if (voronoi_.isVoronoi(m_x, m_y))
+  //   return 0;
+  // else
+  //   return ((8 - voronoi_.getDistance(m_x, m_y)));
+  return 0;
 }
 
 bool GuidedHybridAStar::computePath() {
@@ -546,9 +552,13 @@ bool GuidedHybridAStar::computePathFromStartToGoal() {
     // std::cout << "iterations: " << iterations << std::endl;
     current_node_ptr->setStatus(IN_CLOSESET);
     close_list_.emplace(current_node_ptr->getIndex(), current_node_ptr);
-    if ((current_node_ptr->getState().head(2) - goal_->getState().head(2))
-            .norm() <= serch_info_.shot_distance) {
-      std::cout << "analyticExpansions" << std::endl;
+    double dis =
+        (current_node_ptr->getState().head(2) - goal_->getState().head(2))
+            .norm();
+    // RCLCPP_INFO(logger_, "dis: %f , shot_distance: %f", dis,
+    //             serch_info_.shot_distance);
+    if (dis <= serch_info_.shot_distance) {
+      RCLCPP_INFO(logger_, "analyticExpansions");
       double rs_length = 0.0;
       if (analyticExpansions(current_node_ptr, goal_, rs_length)) {
         goal_->setParentNode(current_node_ptr);
@@ -710,7 +720,7 @@ bool GuidedHybridAStar::computePathFromStartToGoal() {
       }
     }
   }
-  RCLCPP_INFO(logger_, "iterations: %d", iterations);
+  RCLCPP_INFO(logger_, "final iterations: %d", iterations);
   return false;
 }
 
@@ -765,8 +775,9 @@ bool GuidedHybridAStar::computePathThroughPoses() {
       std::cout << "analyticExpansions" << std::endl;
       double rs_length = 0.0;
       if (analyticExpansions(current_node_ptr, goal_, rs_length)) {
+        RCLCPP_INFO(logger_, "setParentNode");
         goal_->setParentNode(current_node_ptr);
-        RCLCPP_INFO(logger_, "iterations: %d", iterations);
+        RCLCPP_INFO(logger_, "iterationss: %d", iterations);
         return true;
       }
     }
@@ -945,4 +956,4 @@ bool GuidedHybridAStar::backtracePath(VectorVec3d &path) {
 
 GuidedHybridAStar::~GuidedHybridAStar() {}
 
-} // namespace guided_hybrid_a_star
+}  // namespace guided_hybrid_a_star

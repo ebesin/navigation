@@ -97,4 +97,4 @@ bool GridCollisionChecker::outsideRange(const unsigned int &max,
   return value < 0.0f || value > max;
 }
 
-} // namespace guided_hybrid_a_star
+}  // namespace guided_hybrid_a_star
