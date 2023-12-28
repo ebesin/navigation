@@ -1,5 +1,6 @@
 #pragma once
 
+#include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <nav_msgs/msg/detail/path__struct.hpp>
 
 #include "ilqr_optimizer.h"
@@ -15,6 +16,10 @@ class IlqrPathOptimizer : public IlqrOptimizer {
                     const Eigen::MatrixXd& R);
 
   int optimize(const nav_msgs::msg::Path& ref_path,
+               nav_msgs::msg::Path& opt_path);
+
+  int optimize(const geometry_msgs::msg::Pose begin_pose,
+               const geometry_msgs::msg::Pose end_pose,
                nav_msgs::msg::Path& opt_path);
 };
 }  // namespace Optimizer

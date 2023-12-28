@@ -2,6 +2,7 @@
 
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <nav_msgs/msg/detail/path__struct.hpp>
+#include <vector>
 
 #include "nav_msgs/msg/path.hpp"
 #include "vehicle_model_interface.h"
@@ -37,4 +38,7 @@ void convertToMsg(const std::vector<Eigen::VectorXd>& state,
 
 void convertToStateVec(const nav_msgs::msg::Path& path,
                        std::vector<Eigen::VectorXd>& state);
+
+void pathSegmentation(const nav_msgs::msg::Path& path, int unit_size,
+                      std::vector<nav_msgs::msg::Path>& paths);
 }  // namespace OptimizerUtils

@@ -41,6 +41,8 @@ set(OPTIMIZER_SRC
     src/optimizer_utils.cpp
     src/ilqr_path_optimizer.cpp
     src/ilqr_planner.cpp
+    src/ilqr_path_planner.cpp
+    src/rs_path.cpp
 )
 add_library(optimizer_lib SHARED
     ${OPTIMIZER_SRC}
@@ -50,11 +52,11 @@ ament_target_dependencies(optimizer_lib
 )
 
 # release
-add_executable(${PROJECT_NAME} src/optimizer_node.cpp)
-target_link_libraries(${PROJECT_NAME}
+add_executable(${PROJECT_NAME}_node src/optimizer_node.cpp)
+target_link_libraries(${PROJECT_NAME}_node
     optimizer_lib
 )
-ament_target_dependencies(${PROJECT_NAME}
+ament_target_dependencies(${PROJECT_NAME}_node
     ${DEPENDENCIES}
 )
 
@@ -69,8 +71,38 @@ ament_target_dependencies(${PROJECT_NAME}_test
     ${DEPENDENCIES}
 )
 
+# tests
+add_executable(ilqr_path_planner_test tests/test_ilqr_path_planner.cpp)
+target_link_libraries(ilqr_path_planner_test
+    optimizer_lib
+    ${GTEST_LIBRARIES}
+    ${GTEST_MAIN_LIBRARIES}
+)
+ament_target_dependencies(ilqr_path_planner_test
+    ${DEPENDENCIES}
+)
 
-install(TARGETS ${PROJECT_NAME}
+# tests
+add_executable(rs_path_test tests/test_rs_path.cpp)
+target_link_libraries(rs_path_test
+    optimizer_lib
+    ${GTEST_LIBRARIES}
+    ${GTEST_MAIN_LIBRARIES}
+)
+ament_target_dependencies(rs_path_test
+    ${DEPENDENCIES}
+)
+
+
+install(TARGETS ${PROJECT_NAME}_node
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS optimizer_lib
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
     RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -78,13 +110,21 @@ install(TARGETS ${PROJECT_NAME}_test
     RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
+install(TARGETS ilqr_path_planner_test
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS rs_path_test
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 
-# find_package(ament_cmake_gtest REQUIRED)
-# ament_add_gtest(${PROJECT_NAME}_test tests/ros_test_optimizer.cpp)
-# ament_target_dependencies(${PROJECT_NAME}_test rclcpp)
 
+install(DIRECTORY include/
+  DESTINATION include/)
+  
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   find_package(ament_cmake_gtest REQUIRED)
@@ -92,5 +132,14 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+
+ament_export_include_directories(include)
+ament_export_libraries(
+    ${PROJECT_NAME}
+    optimizer_lib
+)
+
+ament_export_dependencies(${DEPENDENCIES})
 
 ament_package()

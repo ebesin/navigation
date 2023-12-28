@@ -326,7 +326,7 @@ void GuidedHybridAStar::resetObstacleHeuristic(
 
   const unsigned int goal_index =
       floor(goal_y / 2.0) * size_x + floor(goal_x / 2.0);
-  RCLCPP_INFO_STREAM(logger_, blue << flag << "goal_index:" << goal_index);
+  // RCLCPP_INFO_STREAM(logger_, blue << flag << "goal_index:" << goal_index);
   // std::cout << blue << flag << "goal_index:" << goal_index << std::endl;
   obstacle_heuristic_queue_.emplace_back(
       distanceHeuristic2D(goal_index, size_x, start_x, start_y), goal_index);
@@ -462,7 +462,7 @@ bool GuidedHybridAStar::analyticExpansions(const StateNodePtr &current_node,
       return false;
     };
   rs_path_poses.erase(rs_path_poses.begin());
-  ;
+
   target_node->setIntermediateStates(rs_path_poses);
   target_node->setParentNode(current_node);
   return true;
@@ -500,16 +500,21 @@ void GuidedHybridAStar::generateVoronoiMap() {
   voronoi_.visualize(
       "/home/dwayne/workspace/navigation/nav2_ws/src/navigation/"
       "guided_hybrid_planner/map/retult.pgm");
+  RCLCPP_INFO(logger_, "voronoi max dist: %f", voronoi_.getMaxDist());
 }
 
 float GuidedHybridAStar::getVoronoiCost(int m_x, int m_y) {
-  // return (8 - voronoi_.getDistance(m_x, m_y));
+  // return ( - voronoi_.getDistance(m_x, m_y));
   // if (voronoi_.getDistance(m_x, m_y) >= 4)
-  // if (voronoi_.isVoronoi(m_x, m_y))
-  //   return 0;
-  // else
-  //   return ((8 - voronoi_.getDistance(m_x, m_y)));
-  return 0;
+  if (voronoi_.isVoronoi(m_x, m_y) || voronoi_.getDistance(m_x, m_y) >= 18)
+    return 0;
+  else {
+    double max_dist = voronoi_.getMaxDist();
+    return 3 * (1 - voronoi_.getDistance(m_x, m_y) / max_dist);
+  }
+
+  // return ((10 - voronoi_.getDistance(m_x, m_y)));
+  // return 0;
 }
 
 bool GuidedHybridAStar::computePath() {
@@ -519,6 +524,10 @@ bool GuidedHybridAStar::computePath() {
   } else {
     RCLCPP_INFO(logger_, "computePathThroughPoses");
     return computePathThroughPoses();
+  }
+  if (serch_info_.publish_serch_tree && visualization_tools_ptr_) {
+    RCLCPP_INFO(logger_, "visualization_tools_ptr_->publish_point_pairs()");
+    visualization_tools_ptr_->publish_point_pairs();
   }
 }
 
@@ -624,7 +633,7 @@ bool GuidedHybridAStar::computePathFromStartToGoal() {
                       costmap_->getOriginY() +
                           (current_node_ptr->getState().y() + 0.5) *
                               costmap_->getResolution()));
-            visualization_tools_ptr_->publish_point_pairs();
+            // visualization_tools_ptr_->publish_point_pairs();
           }
           graph_.emplace(neighbor_node_ptr->getIndex(), neighbor_node_ptr);
           open_list_.emplace(neighbor_node_ptr, neighbor_node_ptr->getCost());
@@ -697,7 +706,7 @@ bool GuidedHybridAStar::computePathFromStartToGoal() {
                       costmap_->getOriginY() +
                           (current_node_ptr->getState().y() + 0.5) *
                               costmap_->getResolution()));
-            visualization_tools_ptr_->publish_point_pairs();
+            // visualization_tools_ptr_->publish_point_pairs();
           }
           graph_.emplace(neighbor_node_ptr->getIndex(), neighbor_node_ptr);
           open_list_.emplace(neighbor_node_ptr, neighbor_node_ptr->getCost());
@@ -721,6 +730,16 @@ bool GuidedHybridAStar::computePathFromStartToGoal() {
     }
   }
   RCLCPP_INFO(logger_, "final iterations: %d", iterations);
+  return false;
+}
+
+bool GuidedHybridAStar::nearkeypoints(const Vec3d &state) {
+  for (auto p : intermediate_nodes_) {
+    if ((state.head(2) - p->getState().head(2)).norm() <=
+        2 * serch_info_.serch_radius) {
+      return true;
+    }
+  }
   return false;
 }
 
@@ -829,7 +848,7 @@ bool GuidedHybridAStar::computePathThroughPoses() {
                       costmap_->getOriginY() +
                           (current_node_ptr->getState().y() + 0.5) *
                               costmap_->getResolution()));
-            visualization_tools_ptr_->publish_point_pairs();
+            // visualization_tools_ptr_->publish_point_pairs();
           }
           graph_.emplace(neighbor_node_ptr->getIndex(), neighbor_node_ptr);
           open_list_.emplace(neighbor_node_ptr, neighbor_node_ptr->getCost());
@@ -855,80 +874,84 @@ bool GuidedHybridAStar::computePathThroughPoses() {
       }
     }
 
-    for (int i = 0; i < backward_projections_.size(); i++) {
-      // 获取所有合法的后方邻居节点
-      if (getBackNeighbor(current_node_ptr, i, neighbor_node_ptr)) {
-        std::unordered_map<int, GuidedHybridAStar::StateNodePtr>::iterator
-            iterator = graph_.find(neighbor_node_ptr->getIndex());
-        if (iterator == graph_.end()) {
-          // 说明是未访问过的节点
-          neighbor_node_ptr->setStatus(IN_OPENSET);
-          neighbor_node_ptr->setDirection(BACKWARD);
-          double traj_cost =
-              current_node_ptr->getTrajcost() +
-              computeTrajCost(current_node_ptr, neighbor_node_ptr);
-          neighbor_node_ptr->setTrajCost(traj_cost);
-          // neighbor_node_ptr->setHeuCost(computeHeuristicCost(neighbor_node_ptr,
-          // goal_));
-          double dist_cost = computeDistanceHeuristicCost(neighbor_node_ptr,
-                                                          current_target_node);
-          double obs_cost = computeObstacleHeuristicCost(neighbor_node_ptr,
-                                                         current_target_node);
-          // neighbor_node_ptr->setHeuCost(std::max(dist_cost, obs_cost));
-          neighbor_node_ptr->setHeuCost(dist_cost);
-          neighbor_node_ptr->setParentNode(current_node_ptr);
-          if (serch_info_.show_log) {
-            RCLCPP_INFO(logger_,
-                        "x:%-12.5fy:%-12.5fheading:%-12.5fheu_cost:%-12.5ftraj_"
-                        "cost:%-12.5ftotal_cost:%-12.5fdist_"
-                        "cost:%-12.5fobs_cost:%-12.5f",
-                        neighbor_node_ptr->getState().x(),
-                        neighbor_node_ptr->getState().y(),
-                        neighbor_node_ptr->getState().z() * 180 / M_PI,
-                        neighbor_node_ptr->getHeuCost(),
-                        neighbor_node_ptr->getTrajcost(),
-                        neighbor_node_ptr->getCost(), dist_cost, obs_cost);
-          }
-          if (serch_info_.publish_serch_tree && visualization_tools_ptr_) {
-            visualization_tools_ptr_->add_point_pair(
-                Vec2d(costmap_->getOriginX() +
-                          (neighbor_node_ptr->getState().x() + 0.5) *
-                              costmap_->getResolution(),
-                      costmap_->getOriginY() +
-                          (neighbor_node_ptr->getState().y() + 0.5) *
-                              costmap_->getResolution()),
-                Vec2d(costmap_->getOriginX() +
-                          (current_node_ptr->getState().x() + 0.5) *
-                              costmap_->getResolution(),
-                      costmap_->getOriginY() +
-                          (current_node_ptr->getState().y() + 0.5) *
-                              costmap_->getResolution()));
-            visualization_tools_ptr_->publish_point_pairs();
-          }
-          graph_.emplace(neighbor_node_ptr->getIndex(), neighbor_node_ptr);
-          open_list_.emplace(neighbor_node_ptr, neighbor_node_ptr->getCost());
-        } else if (iterator->second->getStatus() == IN_OPENSET) {
-          // 说明已经在openlist中，需要检查代价是否可以更小
-          StateNodePtr node = iterator->second;
-          double new_traj_cost = current_node_ptr->getTrajcost() +
-                                 computeTrajCost(current_node_ptr, node);
-          // double       new_heuristic_cost = computeHeuristicCost(node,
-          // goal_);
-          double new_heuristic_cost =
-              computeEulerDistanceHeuristicCost(node, current_target_node);
-          // 如果新的代价更小则更新并加入openlist
-          if (node->getCost() > new_traj_cost + new_heuristic_cost) {
-            node->setTrajCost(new_traj_cost);
-            node->setHeuCost(new_heuristic_cost);
-            node->setDirection(BACKWARD);
-            node->setStatus(IN_OPENSET);
-            node->setParentNode(current_node_ptr);
-            open_list_.emplace(node, node->getCost());
+    if (nearkeypoints(current_node_ptr->getState())) {
+      for (int i = 0; i < backward_projections_.size(); i++) {
+        // 获取所有合法的后方邻居节点
+        if (getBackNeighbor(current_node_ptr, i, neighbor_node_ptr)) {
+          std::unordered_map<int, GuidedHybridAStar::StateNodePtr>::iterator
+              iterator = graph_.find(neighbor_node_ptr->getIndex());
+          if (iterator == graph_.end()) {
+            // 说明是未访问过的节点
+            neighbor_node_ptr->setStatus(IN_OPENSET);
+            neighbor_node_ptr->setDirection(BACKWARD);
+            double traj_cost =
+                current_node_ptr->getTrajcost() +
+                computeTrajCost(current_node_ptr, neighbor_node_ptr);
+            neighbor_node_ptr->setTrajCost(traj_cost);
+            // neighbor_node_ptr->setHeuCost(computeHeuristicCost(neighbor_node_ptr,
+            // goal_));
+            double dist_cost = computeDistanceHeuristicCost(
+                neighbor_node_ptr, current_target_node);
+            double obs_cost = computeObstacleHeuristicCost(neighbor_node_ptr,
+                                                           current_target_node);
+            // neighbor_node_ptr->setHeuCost(std::max(dist_cost, obs_cost));
+            neighbor_node_ptr->setHeuCost(dist_cost);
+            neighbor_node_ptr->setParentNode(current_node_ptr);
+            if (serch_info_.show_log) {
+              RCLCPP_INFO(
+                  logger_,
+                  "x:%-12.5fy:%-12.5fheading:%-12.5fheu_cost:%-12.5ftraj_"
+                  "cost:%-12.5ftotal_cost:%-12.5fdist_"
+                  "cost:%-12.5fobs_cost:%-12.5f",
+                  neighbor_node_ptr->getState().x(),
+                  neighbor_node_ptr->getState().y(),
+                  neighbor_node_ptr->getState().z() * 180 / M_PI,
+                  neighbor_node_ptr->getHeuCost(),
+                  neighbor_node_ptr->getTrajcost(),
+                  neighbor_node_ptr->getCost(), dist_cost, obs_cost);
+            }
+            if (serch_info_.publish_serch_tree && visualization_tools_ptr_) {
+              visualization_tools_ptr_->add_point_pair(
+                  Vec2d(costmap_->getOriginX() +
+                            (neighbor_node_ptr->getState().x() + 0.5) *
+                                costmap_->getResolution(),
+                        costmap_->getOriginY() +
+                            (neighbor_node_ptr->getState().y() + 0.5) *
+                                costmap_->getResolution()),
+                  Vec2d(costmap_->getOriginX() +
+                            (current_node_ptr->getState().x() + 0.5) *
+                                costmap_->getResolution(),
+                        costmap_->getOriginY() +
+                            (current_node_ptr->getState().y() + 0.5) *
+                                costmap_->getResolution()));
+              // visualization_tools_ptr_->publish_point_pairs();
+            }
+            graph_.emplace(neighbor_node_ptr->getIndex(), neighbor_node_ptr);
+            open_list_.emplace(neighbor_node_ptr, neighbor_node_ptr->getCost());
+          } else if (iterator->second->getStatus() == IN_OPENSET) {
+            // 说明已经在openlist中，需要检查代价是否可以更小
+            StateNodePtr node = iterator->second;
+            double new_traj_cost = current_node_ptr->getTrajcost() +
+                                   computeTrajCost(current_node_ptr, node);
+            // double       new_heuristic_cost = computeHeuristicCost(node,
+            // goal_);
+            double new_heuristic_cost =
+                computeEulerDistanceHeuristicCost(node, current_target_node);
+            // 如果新的代价更小则更新并加入openlist
+            if (node->getCost() > new_traj_cost + new_heuristic_cost) {
+              node->setTrajCost(new_traj_cost);
+              node->setHeuCost(new_heuristic_cost);
+              node->setDirection(BACKWARD);
+              node->setStatus(IN_OPENSET);
+              node->setParentNode(current_node_ptr);
+              open_list_.emplace(node, node->getCost());
+            }
           }
         }
       }
     }
   }
+
   RCLCPP_INFO(logger_, "iterations: %d", iterations);
   return false;
 }
@@ -950,6 +973,35 @@ bool GuidedHybridAStar::backtracePath(VectorVec3d &path) {
                                       << "  y: " << node->getState().y());
     }
     node = node->getParentNode();
+  }
+  return true;
+}
+
+bool GuidedHybridAStar::backtracePath(std::vector<VectorVec3d> &paths) {
+  std::cout << "backtracePath" << std::endl;
+  StateNodePtr node = goal_->getParentNode();
+  rclcpp::Rate r(2);
+  VectorVec3d states;
+  goal_->getIntermediateStates(states);
+  VectorVec3d path;
+  for (int i = states.size() - 1; i >= 0; i--) {
+    path.push_back(states[i]);
+  }
+  paths.push_back(path);
+  path.clear();
+  while (node) {
+    path.push_back(node->getState());
+    if (serch_info_.show_log) {
+      RCLCPP_INFO_STREAM(logger_, "backtracePath-->"
+                                      << "  x: " << node->getState().x()
+                                      << "  y: " << node->getState().y());
+    }
+    StateNodePtr parent_node = node->getParentNode();
+    if (parent_node && parent_node->getDirection() != node->getDirection()) {
+      paths.push_back(path);
+      path.clear();
+    }
+    node = parent_node;
   }
   return true;
 }

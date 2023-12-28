@@ -9,7 +9,7 @@ Copyright (c) 2023 by dwayne, All Rights Reserved.
 import os
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription, RegisterEventHandler, LogInfo, TimerAction, ExecuteProcess
+from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable, GroupAction, IncludeLaunchDescription, RegisterEventHandler, LogInfo, TimerAction, ExecuteProcess
 from launch.event_handlers import (OnExecutionComplete, OnProcessExit,
                                    OnProcessIO, OnProcessStart, OnShutdown)
 from launch.substitutions import LaunchConfiguration, PythonExpression
@@ -81,8 +81,8 @@ def generate_launch_description():
         param_rewrites=param_substitutions,
         convert_types=True)
 
-    # stdout_linebuf_envvar = SetEnvironmentVariable(
-    #     'ROS_LOG_DIR', '/home/dwayne/workspace/navigation/nav2_ws/src/navigation/guided_hybrid_planner/log')
+    stdout_linebuf_envvar = SetEnvironmentVariable(
+        'ROS_LOG_DIR', '/home/dwayne/workspace/navigation/nav2_ws/src/navigation/guided_hybrid_planner/log')
 
     start_rviz_cmd = Node(
         package='rviz2',
@@ -103,6 +103,7 @@ def generate_launch_description():
                 executable='guided_hybrid_planner_flow',
                 name="guided_hybrid_planner_flow",
                 output='log',
+                # output='screen',
                 respawn=use_respawn,
                 parameters=[configured_params],
                 respawn_delay=2.0,
@@ -142,6 +143,7 @@ def generate_launch_description():
 
     ld = LaunchDescription()
 
+    ld.add_action(stdout_linebuf_envvar)
     ld.add_action(declare_params_file_cmd)
     ld.add_action(declare_map_yaml_cmd)
     ld.add_action(declare_rviz_config_file_cmd)

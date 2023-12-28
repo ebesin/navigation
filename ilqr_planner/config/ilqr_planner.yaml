@@ -2,9 +2,9 @@
    ros__parameters:
       max_opt_points: 40
       opt_time_interval: 0.1
-      weight_intermediate_state: [10.0,10.0,10.0,0.0,0.0]
-      weight_end_state: [1000.0,1000.0,1000.0,0.0,0.0]
-      weight_control: [1000.0,100.0]
+      weight_intermediate_state: [100.0,100.0,1.0,0.0,0.0]
+      weight_end_state: [1000.0,1000.0,10.0,0.0,0.0]
+      weight_control: [10.0,100.0]
       back_weight_intermediate_state: [100.0,100.0,1.0,0.0,0.0]
       back_weight_end_state: [1000.0,1000.0,10.0,0.0,0.0]
       back_weight_control: [10.0,1000.0]

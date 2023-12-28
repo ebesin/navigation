@@ -39,6 +39,7 @@ void IlqrOptimizer::setMaxIteration(const int max_iteration) {
 }
 
 int IlqrOptimizer::setWightMatrix(const Eigen::MatrixXd& Q,
+                                  const Eigen::MatrixXd& Q_end,
                                   const Eigen::MatrixXd& R) {
   m_Q = Q;
   m_R = R;
@@ -165,7 +166,7 @@ int IlqrOptimizer::optimize(const std::vector<Eigen::VectorXd>& ref_state,
   }
 
   m_ref_state = Eigen::VectorXd::Zero(m_step * m_dim_x);
-  for (int k = 0; k < ref_state.size(); ++k) {
+  for (int k = 1; k < ref_state.size(); ++k) {
     m_ref_state.segment(k * m_dim_x, m_dim_x) = ref_state[k].head(m_dim_x);
   }
   Eigen::MatrixXd temp_control;

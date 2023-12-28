@@ -3,10 +3,10 @@
       traj_type: "sin"
       sin_cycle: 18.85
       sin_amplitude: 10.0
-      resulation: 0.05
-      direction: -1
+      resulation: 0.02
+      direction: 1
       generate_from_file: true
-      generate_mode: 3
+      generate_mode: 2
       path_folder: "/home/dwayne/workspace/navigation/nav2_ws/src/navigation/file"
       # path_filename: "coor_record.txt"
       path_filename: "coor_record_abcd_points_60m_600points.txt"
@@ -16,4 +16,4 @@
    ros__parameters:
       origin_x: 0.0
       origin_y: 0.0
-      origin_phi: 0.0
+      origin_phi: 80.0

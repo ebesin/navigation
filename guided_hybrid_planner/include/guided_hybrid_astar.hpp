@@ -10,6 +10,10 @@
 #ifndef GUIDED_HYBRID_A_STAR_HPP_
 #define GUIDED_HYBRID_A_STAR_HPP_
 
+#include <iomanip>
+#include <iostream>
+#include <vector>
+
 #include "collision_checker.hpp"
 #include "costmap_downsampler.hpp"
 #include "dynamicvoronoi/dynamicvoronoi.h"
@@ -23,15 +27,13 @@
 #include "tf2/utils.h"
 #include "tf2_ros/buffer.h"
 #include "visualization_tools.hpp"
-#include <iomanip>
-#include <iostream>
-#include <vector>
 
 namespace guided_hybrid_a_star {
 class GuidedHybridAStar {
-public:
+ public:
   typedef std::shared_ptr<StateNode> StateNodePtr;
   typedef std::pair<float, unsigned int> ObstacleHeuristicElement;
+
   struct ObstacleHeuristicComparator {
     bool operator()(const ObstacleHeuristicElement &a,
                     const ObstacleHeuristicElement &b) const {
@@ -65,8 +67,8 @@ public:
    * @description  : setCollisionChecker
    * @return        {*}
    */
-  void
-  setCollisionChecker(const std::shared_ptr<GridCollisionChecker> &checker) {
+  void setCollisionChecker(
+      const std::shared_ptr<GridCollisionChecker> &checker) {
     this->collision_checker_ = checker;
   }
 
@@ -79,8 +81,11 @@ public:
   bool computePath();
   bool computePathFromStartToGoal();
   bool computePathThroughPoses();
+  bool nearkeypoints(const Vec3d &state);
 
   bool backtracePath(VectorVec3d &path);
+
+  bool backtracePath(std::vector<VectorVec3d> &paths);
 
   /**
    * @description  : 解析展开阶段，计算当前点到目标点是否有无碰撞的RS曲线
@@ -217,7 +222,7 @@ public:
 
   float getVoronoiCost(int m_x, int m_y);
 
-private:
+ private:
   rclcpp::Clock::SharedPtr clock_;
   rclcpp::Logger logger_{rclcpp::get_logger("GuidedHybridPlanner")};
   rclcpp_lifecycle::LifecycleNode::WeakPtr node_;
@@ -230,7 +235,7 @@ private:
 
   std::shared_ptr<VisualizationTools> visualization_tools_ptr_ = nullptr;
 
-  //单位角度
+  // 单位角度
   double unit_angle_;
   unsigned int angle_size_;
   unsigned int x_size_;
@@ -250,7 +255,8 @@ private:
                     const std::pair<StateNodePtr, float> right) const {
       return left.second >= right.second;
     }
-  }; // namespace guided_hybrid_a_star
+  };  // namespace guided_hybrid_a_star
+
   std::priority_queue<std::pair<StateNodePtr, float>,
                       std::vector<std::pair<StateNodePtr, float>>, cmp>
       open_list_;
@@ -260,6 +266,6 @@ private:
   ObstacleHeuristicQueue obstacle_heuristic_queue_;
   std::vector<double> obstacle_heuristic_lookup_table_;
 };
-} // namespace guided_hybrid_a_star
+}  // namespace guided_hybrid_a_star
 
 #endif

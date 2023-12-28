@@ -29,7 +29,8 @@ class IlqrOptimizer : public OptimizerInterface {
   void setStopDiffCost(const double stop_diff_cost);
   void setStep(const int step);
   void setMaxIteration(const int max_iteration);
-  int setWightMatrix(const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R);
+  int setWightMatrix(const Eigen::MatrixXd& Q, const Eigen::MatrixXd& Q_end,
+                     const Eigen::MatrixXd& R);
   double getBestCost();
 
  protected:

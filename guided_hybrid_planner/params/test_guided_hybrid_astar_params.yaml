@@ -7,8 +7,8 @@ global_costmap:
       robot_base_frame: base_link
       use_sim_time: True
       # robot_radius: 0.32
-      # footprint: "[ [-0.05, 0.15], [0.40,0.15], [0.40,-0.15], [0.15,-0.15], [-0.05,-0.15] ]"
-      footprint: "[ [-0.05, 0.36], [0.65,0.36], [0.65,-0.36], [0.05,-0.36] ]"
+      footprint: "[ [-0.05, 0.15], [0.40,0.15], [0.40,-0.15], [0.15,-0.15], [-0.05,-0.15] ]"
+      # footprint: "[ [-0.05, 0.2], [0.5,0.2], [0.5,-0.2], [-0.05,-0.2] ]"
       footprint_padding: 0.05
 
       resolution: 0.05
@@ -51,17 +51,19 @@ map_server:
 
 guided_hybrid_planner_flow:
   ros__parameters:
+    max_iterations: 10000000
     shot_distance: 0.5
     steer_angle_segment_size: 3
-    wheel_base: 0.65
-    cost_penalty: 3.0
+    wheel_base: 0.5
+    cost_penalty: 0.0
     reverse_penalty: 2.0
-    steering_change_penalty: 2.0
-    steering_penalty: 1.2
-    max_steer_angle: 27.0
-    publish_serch_tree: false
+    change_direction_penalty: 100.0
+    steering_change_penalty: 1.0
+    steering_penalty: 1.0
+    max_steer_angle: 25.0
+    publish_serch_tree: true
     show_log: false
-    serch_radius: 1.0
+    serch_radius: 4.0
 
     smoother:
       max_iterations: 1000

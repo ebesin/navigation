@@ -12,6 +12,7 @@
 #include <nav_msgs/msg/detail/path__struct.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/node.hpp>
+#include <rclcpp/publisher.hpp>
 #include <rclcpp/qos.hpp>
 #include <utility>
 
@@ -36,6 +37,7 @@ IlqrPlanner::IlqrPlanner(std::string name) : rclcpp::Node(name) {
   ref_path_subscriber_ = create_subscription<nav_msgs::msg::Path>(
       "/generate_path", rclcpp::SystemDefaultsQoS(),
       std::bind(&IlqrPlanner::refPathCallback, this, std::placeholders::_1));
+
   opt_path_publisher_ = create_publisher<nav_msgs::msg::Path>(
       "/opt_path", rclcpp::SystemDefaultsQoS());
   twist_publisher_ = create_publisher<geometry_msgs::msg::Twist>(

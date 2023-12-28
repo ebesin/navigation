@@ -9,6 +9,8 @@
   <maintainer email="ebesin@outlook.com">dwayne</maintainer>
   <license>TODO: License declaration</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>tf2</depend>
@@ -17,6 +19,8 @@
   <depend>sensor_msgs</depend>
   <depend>visualization_msgs</depend>
   <depend>nav2_util</depend>
+  <depend>utils_tool</depend>
+  <depend>ilqr_planner</depend>
   <depend>navigation2</depend>
   <depend>nav2_core</depend>
   <depend>nav2_smac_planner</depend>

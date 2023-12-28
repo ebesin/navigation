@@ -9,7 +9,24 @@
 
 #include "guided_hybrid_astar_flow.hpp"
 
+#include <unistd.h>
+
+#include <fstream>
+#include <geometry_msgs/msg/detail/pose__struct.hpp>
+#include <geometry_msgs/msg/detail/pose_stamped__struct.hpp>
+#include <iostream>
+#include <memory>
+#include <nav_msgs/msg/path.hpp>
 #include <rclcpp/logging.hpp>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "coor_tools.h"
+#include "optimizer_utils.h"
+
+// #include "ilqr_path_planner.h"
 
 namespace guided_hybrid_a_star {
 GuidedHybridAstarFlow::GuidedHybridAstarFlow(const std::string& name,
@@ -160,12 +177,37 @@ nav2_util::CallbackReturn GuidedHybridAstarFlow::on_configure(
   //     std::make_shared<GridCollisionChecker>(costmap_,
   //     serch_info_.angle_segment_size);
 
+  vehicle_model_ptr_ =
+      std::make_shared<VehicleModel::VehicleModelBicycleRearDriveFiveState>(
+          serch_info_.wheel_base);
+
+  Eigen::MatrixXd Q, Q_end, R;
+  Q = Eigen::MatrixXd::Zero(vehicle_model_ptr_->getDimX(),
+                            vehicle_model_ptr_->getDimX());
+  Q_end = Eigen::MatrixXd::Zero(vehicle_model_ptr_->getDimX(),
+                                vehicle_model_ptr_->getDimX());
+  R = Eigen::MatrixXd::Zero(vehicle_model_ptr_->getDimU(),
+                            vehicle_model_ptr_->getDimU());
+
+  Q(0, 0) = 1e1;
+  Q(1, 1) = 1e1;
+  Q(2, 2) = 1e1;
+  Q_end(0, 0) = 1e4;
+  Q_end(1, 1) = 1e4;
+  Q_end(2, 2) = 1e4;
+  R(0, 0) = 1e-2;
+  R(1, 1) = 1e-2;
+
+  ilqr_planner_ = std::make_shared<Optimizer::IlqrPathPlanner>(
+      vehicle_model_ptr_, Q, Q_end, R);
+
   guided_hybrid_a_star_ =
       std::make_unique<GuidedHybridAStar>(costmap_, serch_info_);
 
   plan_publisher_ =
       node->create_publisher<nav_msgs::msg::Path>("origin_path", 1);
-
+  this->rs_path_ptr_ = std::make_shared<RSPath>(
+      serch_info_.wheel_base / tan(serch_info_.max_steer_angle));
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
@@ -180,7 +222,7 @@ nav2_util::CallbackReturn GuidedHybridAstarFlow::on_activate(
   plan_publisher_->on_activate();
 
   timer_base_ =
-      create_wall_timer(std::chrono::milliseconds(static_cast<int>(1000)),
+      create_wall_timer(std::chrono::milliseconds(static_cast<int>(2000)),
                         std::bind(&GuidedHybridAstarFlow::timerCallback, this));
 
   createBond();
@@ -265,20 +307,59 @@ void GuidedHybridAstarFlow::worldToMap(nav2_costmap_2d::Costmap2D* costmap,
 }
 
 void GuidedHybridAstarFlow::timerCallback() {
+  timer_count++;
+  if (timer_count < 0) return;
   readData();
   if (hasValidPose()) {
     initPoseData();
     waitForCostmap();
     RCLCPP_INFO(get_logger(), "generateVoronoiMap......");
-    // guided_hybrid_a_star_->generateVoronoiMap();
+    guided_hybrid_a_star_->generateVoronoiMap();
     RCLCPP_INFO(get_logger(), "collision_checker_......");
     collision_checker_ = std::make_shared<GridCollisionChecker>(
         costmap_, serch_info_.angle_segment_size);
+    collision_checker_->setFootprint(costmap_ros_->getRobotFootprint(), false,
+                                     -1.0);
     RCLCPP_INFO(get_logger(), "createPlan......");
     nav_msgs::msg::Path plan =
         createPlan(current_init_pose->pose.pose, current_goal_pose->pose);
     smoother_->smooth(plan, costmap_, 10);
     plan_publisher_->publish(plan);
+  }
+}
+
+std::string get_cur_time_str() {
+  auto now = std::chrono::system_clock::now();
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                now.time_since_epoch()) %
+            1000;
+  std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+  std::tm* timeInfo = std::localtime(&currentTime);
+  std::stringstream ss;
+  ss << std::put_time(timeInfo, "%Y-%m-%d-%H-%M-%S") << "-" << ms.count();
+  return ss.str();
+}
+
+void GuidedHybridAstarFlow::createRSPath(
+    geometry_msgs::msg::PoseStamped begin_pose,
+    geometry_msgs::msg::PoseStamped end_pose, nav_msgs::msg::Path& rs_path) {
+  Vec3d start;
+  Vec3d end;
+  start.x() = begin_pose.pose.position.x;
+  start.y() = begin_pose.pose.position.y;
+  start.z() = utils_tool::getYawFromQuaternion(begin_pose.pose.orientation);
+  end.x() = end_pose.pose.position.x;
+  end.y() = end_pose.pose.position.y;
+  end.z() = utils_tool::getYawFromQuaternion(end_pose.pose.orientation);
+  double distance;
+  auto pose_vec = rs_path_ptr_->GetRSPath(start, end, 0.05, distance);
+  rs_path.poses.clear();
+  for (auto p : pose_vec) {
+    geometry_msgs::msg::PoseStamped pose;
+    pose.pose.position.x = p.x();
+    pose.pose.position.y = p.y();
+    pose.pose.orientation = utils_tool::createQuaternionMsgFromYaw(p.z());
+    rs_path.poses.emplace_back(std::move(pose));
   }
 }
 
@@ -320,6 +401,8 @@ nav_msgs::msg::Path GuidedHybridAstarFlow::createPlan(
   }
   guided_hybrid_a_star_->setIntermediateNodes(m_intermediate_points);
   nav_msgs::msg::Path plan;
+  std::vector<nav_msgs::msg::Path> plans;
+  nav_msgs::msg::Path total_plan;
   plan.header.frame_id = global_frame_;
   geometry_msgs::msg::PoseStamped pose;
   pose.header = plan.header;
@@ -340,25 +423,118 @@ nav_msgs::msg::Path GuidedHybridAstarFlow::createPlan(
     error = "invalid use: ";
     error += e.what();
   }
-
-  if (guided_hybrid_a_star_->backtracePath(path)) {
-    plan.poses.reserve(path.size());
-    for (int i = path.size() - 1; i >= 0; --i) {
-      // costmap_->mapToWorld(
-      //     path[i].x(), path[i].y(), pose.pose.position.x,
-      //     pose.pose.position.y);
-      pose.pose.position.x = costmap_->getOriginX() +
-                             (path[i].x() + 0.5) * costmap_->getResolution();
-      pose.pose.position.y = costmap_->getOriginY() +
-                             (path[i].y() + 0.5) * costmap_->getResolution();
-      tf2::Quaternion q;
-      q.setEuler(0.0, 0.0, path[i].z());
-      pose.pose.orientation = tf2::toMsg(q);
-      plan.poses.push_back(pose);
+  std::vector<VectorVec3d> paths;
+  guided_hybrid_a_star_->backtracePath(paths);
+  RCLCPP_INFO_STREAM(get_logger(), "path segment size: " << paths.size());
+  std::vector<VectorVec3d> forward_paths;
+  for (int i = paths.size() - 1; i >= 0; --i) {
+    VectorVec3d single_path;
+    for (int j = paths.at(i).size() - 1; j >= 0; --j) {
+      single_path.emplace_back(paths.at(i).at(j));
     }
-  } else {
-    std::cout << "---------error2---------" << std::endl;
+    RCLCPP_INFO_STREAM(get_logger(), "segment size: " << single_path.size());
+    forward_paths.emplace_back(std::move(single_path));
   }
+  for (auto path : forward_paths) {
+    nav_msgs::msg::Path single_plan;
+    nav_msgs::msg::Path smooth_path;
+    for (auto point : path) {
+      geometry_msgs::msg::PoseStamped single_pose;
+      single_pose.pose.position.x =
+          costmap_->getOriginX() +
+          (point.x() + 0.5) * costmap_->getResolution();
+      single_pose.pose.position.y =
+          costmap_->getOriginY() +
+          (point.y() + 0.5) * costmap_->getResolution();
+      tf2::Quaternion q;
+      q.setEuler(0.0, 0.0, point.z());
+      single_pose.pose.orientation = tf2::toMsg(q);
+
+      single_plan.poses.emplace_back(std::move(single_pose));
+    }
+    plans.emplace_back(std::move(single_plan));
+  }
+
+  for (auto path : plans) {
+    for (auto pose : path.poses) {
+      plan.poses.emplace_back(std::move(pose));
+    }
+  }
+
+  geometry_msgs::msg::PoseStamped begin_pose;
+  geometry_msgs::msg::PoseStamped end_pose;
+  nav_msgs::msg::Path opt_path;
+  bool re_plan{false};
+  for (int i = 0; i < plans.size(); i++) {
+    if (re_plan && plans.at(i).poses.size() < 10) {
+      continue;
+    }
+    if (re_plan && plans.at(i).poses.size() >= 10) {
+      re_plan = false;
+      if (plans.at(i).poses.size() > 30) {
+        end_pose = plans.at(i).poses.at(10);
+        // ilqr_planner_->doPlan(begin_pose.pose, end_pose.pose, opt_path);
+        createRSPath(begin_pose, end_pose, opt_path);
+        // plan.poses.insert(plan.poses.end(), opt_path.poses.begin(),
+        //                   opt_path.poses.end());
+        nav_msgs::msg::Path tmp_path;
+        tmp_path.poses.insert(tmp_path.poses.end(),
+                              plans.at(i).poses.begin() + 11,
+                              plans.at(i).poses.end());
+        std::vector<nav_msgs::msg::Path> s_paths;
+        OptimizerUtils::pathSegmentation(tmp_path, 50, s_paths);
+        for (auto& path : s_paths) {
+          // ilqr_planner_->doPlan(path, path);
+          plan.poses.insert(plan.poses.end(), path.poses.begin(),
+                            path.poses.end());
+        }
+      } else {
+        end_pose = plans.at(i).poses.back();
+        // ilqr_planner_->doPlan(begin_pose.pose, end_pose.pose, opt_path);
+        createRSPath(begin_pose, end_pose, opt_path);
+        // plan.poses.insert(plan.poses.end(), opt_path.poses.begin(),
+        //                   opt_path.poses.end());
+      }
+    } else if (!re_plan && i < plans.size() - 1 &&
+               plans.at(i + 1).poses.size() < 10) {
+      re_plan = true;
+      if (plans.at(i).poses.size() > 30) {
+        nav_msgs::msg::Path tmp_path;
+        tmp_path.poses.insert(tmp_path.poses.end(), plans.at(i).poses.begin(),
+                              plans.at(i).poses.end() - 10);
+        std::vector<nav_msgs::msg::Path> s_paths;
+        OptimizerUtils::pathSegmentation(tmp_path, 50, s_paths);
+        for (auto& path : s_paths) {
+          // ilqr_planner_->doPlan(path, path);
+          plan.poses.insert(plan.poses.end(), path.poses.begin(),
+                            path.poses.end());
+        }
+        begin_pose = plans.at(i).poses.at(plans.at(i).poses.size() - 10);
+      } else {
+        begin_pose = plans.at(i).poses.front();
+      }
+    } else {
+      std::vector<nav_msgs::msg::Path> s_paths;
+      OptimizerUtils::pathSegmentation(plans.at(i), 50, s_paths);
+      for (auto& path : s_paths) {
+        // ilqr_planner_->doPlan(path, path);
+        plan.poses.insert(plan.poses.end(), path.poses.begin(),
+                          path.poses.end());
+      }
+    }
+  }
+
+  std::stringstream ss;
+  ss << "/home/dwayne/workspace/navigation/nav2_ws/src/navigation/"
+        "guided_hybrid_planner/data/"
+     << get_cur_time_str() << ".txt";
+
+  std::ofstream file(ss.str());
+
+  for (auto pose : plan.poses) {
+    file << pose.pose << std::endl;
+  }
+  file.close();
 
   if (plan_publisher_->get_subscription_count() > 0) {
     plan_publisher_->publish(plan);

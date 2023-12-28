@@ -34,6 +34,22 @@ class VisualizationTools : public rclcpp::Node {
   bool isVisualizationOdom_;
   std::string odom_topic_name_;
 
+  double vehicle_length_;
+  double vehicle_width_;
+  double vehicle_height_;
+  double vehicle_a_;
+  double vehicle_r_;
+  double vehicle_g_;
+  double vehicle_b_;
+
+  double text_length_;
+  double text_width_;
+  double text_height_;
+  double text_a_;
+  double text_r_;
+  double text_g_;
+  double text_b_;
+
   /*callback functions*/
   void odomCallback(const nav_msgs::msg::Odometry::SharedPtr odom);
   void pathCallback(const nav_msgs::msg::Path::SharedPtr path);
@@ -43,6 +59,8 @@ class VisualizationTools : public rclcpp::Node {
 
   /*init markers*/
   void initMarkers();
+
+  void declareParameter();
 
  public:
   VisualizationTools(std::string name);

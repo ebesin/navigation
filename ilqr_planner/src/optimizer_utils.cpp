@@ -4,10 +4,12 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <geometry_msgs/msg/detail/pose_stamped__struct.hpp>
 #include <iostream>
 #include <memory>
+#include <nav_msgs/msg/detail/path__struct.hpp>
 #include <utility>
 
 #include "tf2/utils.h"
@@ -168,6 +170,29 @@ void convertToStateVec(const nav_msgs::msg::Path& path,
         tf2::getYaw(p.pose.orientation);
     state_vec.emplace_back(std::move(state));
   }
+}
+
+void pathSegmentation(const nav_msgs::msg::Path& path, int unit_size,
+                      std::vector<nav_msgs::msg::Path>& paths) {
+  int segment_size = path.poses.size() / unit_size;
+  int left = path.poses.size() % unit_size;
+  if (left < 20 && segment_size > 0) {
+    segment_size -= 1;
+  }
+
+  for (int i = 0; i < segment_size; i++) {
+    nav_msgs::msg::Path single_path;
+    single_path.poses.reserve(unit_size);
+    single_path.poses.insert(single_path.poses.end(),
+                             path.poses.begin() + i * unit_size,
+                             path.poses.begin() + (i + 1) * unit_size);
+    paths.emplace_back(std::move(single_path));
+  }
+  nav_msgs::msg::Path single_path;
+  single_path.poses.insert(single_path.poses.end(),
+                           path.poses.begin() + segment_size * unit_size,
+                           path.poses.end());
+  paths.emplace_back(std::move(single_path));
 }
 
 }  // namespace OptimizerUtils

@@ -20,6 +20,8 @@ find_package(tf2_ros REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(nav2_util REQUIRED)
+find_package(utils_tool REQUIRED)
+find_package(ilqr_planner REQUIRED)
 find_package(nav2_core REQUIRED)
 find_package(navigation2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
@@ -69,6 +71,8 @@ set(dependencies
   lifecycle_msgs
   rclcpp_lifecycle
   nav2_util
+  utils_tool
+  ilqr_planner
   nav2_core
   tf2_geometry_msgs
   nav2_smac_planner
