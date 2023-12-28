@@ -13,6 +13,7 @@
 #include <mutex>
 #include <vector>
 
+#include "compare_version/hybrid_a_star.h"
 #include "geometry_msgs/msg/point.hpp"
 #include "goal_pose_subscriber.hpp"
 #include "guided_hybrid_astar.hpp"
@@ -140,6 +141,7 @@ class GuidedHybridAstarFlow : public nav2_util::LifecycleNode {
 
   SearchInfo serch_info_;
   std::unique_ptr<GuidedHybridAStar> guided_hybrid_a_star_;
+  std::unique_ptr<HybridAStar> hybrid_a_star_;
 
   geometry_msgs::msg::PoseStamped start_;
   geometry_msgs::msg::PoseStamped goal_;
