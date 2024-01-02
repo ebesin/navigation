@@ -11,6 +11,7 @@
 #include <deque>
 #include <memory>
 #include <mutex>
+#include <nav_msgs/msg/detail/path__struct.hpp>
 #include <vector>
 
 #include "compare_version/hybrid_a_star.h"
@@ -30,6 +31,7 @@
 #include "smoother.hpp"
 #include "tf2_ros/create_timer_ros.h"
 #include "vehicle_model_bicycle_rear_drive_five_state.h"
+#include "visualization_msgs/msg/marker_array.hpp"
 #include "visualization_tools.hpp"
 
 namespace guided_hybrid_a_star {
@@ -116,9 +118,18 @@ class GuidedHybridAstarFlow : public nav2_util::LifecycleNode {
   void worldToMap(nav2_costmap_2d::Costmap2D* costmap, const double& wx,
                   const double& wy, double& mx, double& my);
 
+  void generateVoronoiMap();
+
+  void publishVehiclePath(const nav_msgs::msg::Path& path, double width,
+                          double height, int interval);
+
   std::string name_;
   std::string global_frame_ = "map";
   std::mutex mutex_;
+  int algo_type_{1};
+  double vehicle_width_{0.65};
+  double vehicle_length_{0.4};
+  double vehicle_rear_axle_dist_{0.1};
   // Global Costmap
   std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros_;
   nav2_costmap_2d::Costmap2D* costmap_;
@@ -148,6 +159,8 @@ class GuidedHybridAstarFlow : public nav2_util::LifecycleNode {
   std::shared_ptr<GridCollisionChecker> collision_checker_;
   rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr
       plan_publisher_;
+  rclcpp_lifecycle::LifecyclePublisher<
+      visualization_msgs::msg::MarkerArray>::SharedPtr vehicle_path_publisher_;
 
   rclcpp::TimerBase::SharedPtr timer_base_;
 
@@ -155,6 +168,7 @@ class GuidedHybridAstarFlow : public nav2_util::LifecycleNode {
   std::unique_ptr<nav2_util::NodeThread> visualization_publisher_thread_;
 
   std::shared_ptr<Smoother> smoother_;
+  DynamicVoronoi voronoi_;
 
   std::shared_ptr<VehicleModel::VehicleModelInterface> vehicle_model_ptr_;
   std::shared_ptr<Optimizer::IlqrPathPlanner> ilqr_planner_;

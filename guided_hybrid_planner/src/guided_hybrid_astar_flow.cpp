@@ -11,6 +11,7 @@
 
 #include <unistd.h>
 
+#include <cstdint>
 #include <fstream>
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <geometry_msgs/msg/detail/pose_stamped__struct.hpp>
@@ -22,8 +23,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <visualization_msgs/msg/detail/marker__struct.hpp>
+#include <visualization_msgs/msg/detail/marker_array__struct.hpp>
 
+#include "compare_version/hybrid_a_star.h"
 #include "coor_tools.h"
+#include "nav2_costmap_2d/cost_values.hpp"
 #include "optimizer_utils.h"
 
 // #include "ilqr_path_planner.h"
@@ -52,6 +57,10 @@ GuidedHybridAstarFlow::GuidedHybridAstarFlow(const std::string& name,
   declare_parameter("publish_serch_tree", rclcpp::ParameterValue(true));
   declare_parameter("show_log", rclcpp::ParameterValue(true));
   declare_parameter("serch_radius", rclcpp::ParameterValue(1.0));
+  declare_parameter("algo_type", rclcpp::ParameterValue(1));
+  declare_parameter("vehicle_width", rclcpp::ParameterValue(0.4));
+  declare_parameter("vehicle_length", rclcpp::ParameterValue(0.65));
+  declare_parameter("vehicle_rear_axle_dist", rclcpp::ParameterValue(0.1));
 
   costmap_ros_ = std::make_shared<nav2_costmap_2d::Costmap2DROS>(
       "global_costmap", std::string{get_namespace()}, "global_costmap");
@@ -116,6 +125,10 @@ nav2_util::CallbackReturn GuidedHybridAstarFlow::on_configure(
   node->get_parameter("publish_serch_tree", serch_info_.publish_serch_tree);
   node->get_parameter("show_log", serch_info_.show_log);
   node->get_parameter("serch_radius", serch_info_.serch_radius);
+  node->get_parameter("algo_type", algo_type_);
+  node->get_parameter("vehicle_width", vehicle_width_);
+  node->get_parameter("vehicle_length", vehicle_length_);
+  node->get_parameter("vehicle_rear_axle_dist", vehicle_rear_axle_dist_);
 
   RCLCPP_INFO_STREAM(get_logger(),
                      "max_steer_angle: " << serch_info_.max_steer_angle);
@@ -165,11 +178,12 @@ nav2_util::CallbackReturn GuidedHybridAstarFlow::on_configure(
   smoother_->initialize(static_cast<double>(serch_info_.wheel_base /
                                             tan(serch_info_.max_steer_angle)));
 
-  serch_info_.shot_distance =
-      serch_info_.shot_distance / costmap_->getResolution();
+  // serch_info_.shot_distance =
+  //     serch_info_.shot_distance / costmap_->getResolution();
   // serch_info_.move_step_distance = serch_info_.move_step_distance /
   // costmap_->getResolution();
-  serch_info_.wheel_base = serch_info_.wheel_base / costmap_->getResolution();
+  // serch_info_.wheel_base = serch_info_.wheel_base /
+  // costmap_->getResolution();
   serch_info_.serch_radius =
       serch_info_.serch_radius / costmap_->getResolution();
 
@@ -204,8 +218,18 @@ nav2_util::CallbackReturn GuidedHybridAstarFlow::on_configure(
   guided_hybrid_a_star_ =
       std::make_unique<GuidedHybridAStar>(costmap_, serch_info_);
 
+  hybrid_a_star_ = std::make_unique<HybridAStar>(
+      serch_info_.max_steer_angle, serch_info_.steer_angle_segment_size, 0.2, 5,
+      serch_info_.wheel_base, serch_info_.steering_penalty,
+      serch_info_.reverse_penalty, serch_info_.steering_change_penalty,
+      serch_info_.shot_distance);
+  std::cout << "shot_distance: " << serch_info_.shot_distance << std::endl;
+
   plan_publisher_ =
       node->create_publisher<nav_msgs::msg::Path>("origin_path", 1);
+  vehicle_path_publisher_ =
+      node->create_publisher<visualization_msgs::msg::MarkerArray>(
+          "vehicle_path", 1);
   this->rs_path_ptr_ = std::make_shared<RSPath>(
       serch_info_.wheel_base / tan(serch_info_.max_steer_angle));
   return nav2_util::CallbackReturn::SUCCESS;
@@ -220,19 +244,19 @@ nav2_util::CallbackReturn GuidedHybridAstarFlow::on_activate(
   costmap_ros_->activate();
   visualization_publisher_->activate();
   plan_publisher_->on_activate();
-
+  vehicle_path_publisher_->on_activate();
   timer_base_ =
       create_wall_timer(std::chrono::milliseconds(static_cast<int>(2000)),
                         std::bind(&GuidedHybridAstarFlow::timerCallback, this));
 
   createBond();
+
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
 nav2_util::CallbackReturn GuidedHybridAstarFlow::on_deactivate(
     const rclcpp_lifecycle::State& state) {
   RCLCPP_INFO(get_logger(), "DeActivating");
-
   init_pose_subscriber_->deactivate();
   goal_pose_subscriber_->deactivate();
   intermeidate_pose_subscriber_->deactivate();
@@ -292,6 +316,43 @@ void GuidedHybridAstarFlow::waitForCostmap() {
   }
 }
 
+void GuidedHybridAstarFlow::generateVoronoiMap() {
+  unsigned int size_x = costmap_->getSizeInCellsX();
+  unsigned int size_y = costmap_->getSizeInCellsY();
+  voronoi_.initializeEmpty(size_x, size_y);
+  voronoi_.setMapInfo(costmap_->getOriginX(), costmap_->getOriginY(),
+                      costmap_->getResolution());
+  std::vector<IntPoint> new_free_cells, new_occupied_cells;
+  for (unsigned int j = 0; j < size_y; ++j) {
+    for (unsigned int i = 0; i < size_x; ++i) {
+      if (voronoi_.isOccupied(i, j) &&
+          costmap_->getCost(i, j) == nav2_costmap_2d::FREE_SPACE) {
+        new_free_cells.push_back(IntPoint(i, j));
+      }
+
+      if (!voronoi_.isOccupied(i, j) &&
+          costmap_->getCost(i, j) >= nav2_costmap_2d::MAX_NON_OBSTACLE) {
+        new_occupied_cells.push_back(IntPoint(i, j));
+      }
+    }
+  }
+
+  for (size_t i = 0; i < new_free_cells.size(); ++i) {
+    voronoi_.clearCell(new_free_cells[i].x, new_free_cells[i].y);
+  }
+
+  for (size_t i = 0; i < new_occupied_cells.size(); ++i) {
+    voronoi_.occupyCell(new_occupied_cells[i].x, new_occupied_cells[i].y);
+  }
+  voronoi_.update();
+  voronoi_.prune();
+
+  voronoi_.visualize(
+      "/home/dwayne/workspace/navigation/nav2_ws/src/navigation/"
+      "guided_hybrid_planner/map/retult.pgm");
+  RCLCPP_INFO(get_logger(), "voronoi max dist: %f", voronoi_.getMaxDist());
+}
+
 void GuidedHybridAstarFlow::mapToWorld(nav2_costmap_2d::Costmap2D* costmap,
                                        const double& mx, const double& my,
                                        double& wx, double& wy) {
@@ -313,19 +374,127 @@ void GuidedHybridAstarFlow::timerCallback() {
   if (hasValidPose()) {
     initPoseData();
     waitForCostmap();
-    RCLCPP_INFO(get_logger(), "generateVoronoiMap......");
-    guided_hybrid_a_star_->generateVoronoiMap();
-    RCLCPP_INFO(get_logger(), "collision_checker_......");
-    collision_checker_ = std::make_shared<GridCollisionChecker>(
-        costmap_, serch_info_.angle_segment_size);
-    collision_checker_->setFootprint(costmap_ros_->getRobotFootprint(), false,
-                                     -1.0);
-    RCLCPP_INFO(get_logger(), "createPlan......");
-    nav_msgs::msg::Path plan =
-        createPlan(current_init_pose->pose.pose, current_goal_pose->pose);
-    smoother_->smooth(plan, costmap_, 10);
-    plan_publisher_->publish(plan);
+    switch (algo_type_) {
+      case 1: {
+        generateVoronoiMap();
+        std::unique_ptr<CostmapDownsampler> downsampler =
+            std::make_unique<CostmapDownsampler>();
+        std::weak_ptr<nav2_util::LifecycleNode> ptr;
+        downsampler->on_configure(ptr, "fake_frame", "fake_topic", costmap_,
+                                  2.0, true);
+        auto sampled_costmap = downsampler->downsample(1.0);
+        RCLCPP_INFO_STREAM(
+            get_logger(),
+            "origin_x: " << sampled_costmap->getOriginX()
+                         << " origin_y: " << sampled_costmap->getOriginY()
+                         << " width:" << sampled_costmap->getSizeInCellsX()
+                         << " height:" << sampled_costmap->getSizeInCellsY()
+                         << " resolution:" << sampled_costmap->getResolution()
+                         << " vehicle_length:" << vehicle_length_
+                         << " vehicle_width:" << vehicle_width_);
+
+        hybrid_a_star_->Init(sampled_costmap->getOriginX(),
+                             sampled_costmap->getOriginY(),
+                             sampled_costmap->getSizeInCellsX(),
+                             sampled_costmap->getSizeInCellsY(),
+                             sampled_costmap->getResolution(), vehicle_length_,
+                             vehicle_width_, 0.05);
+        Vec3d start_state;
+        start_state << current_init_pose->pose.pose.position.x,
+            current_init_pose->pose.pose.position.y,
+            utils_tool::getYawFromQuaternion(
+                current_init_pose->pose.pose.orientation);
+        Vec3d goal_state;
+        goal_state << current_goal_pose->pose.position.x,
+            current_goal_pose->pose.position.y,
+            utils_tool::getYawFromQuaternion(
+                current_goal_pose->pose.orientation);
+        for (unsigned int w = 0; w < sampled_costmap->getSizeInCellsX(); w++) {
+          for (unsigned int h = 0; h < sampled_costmap->getSizeInCellsY();
+               h++) {
+            if (sampled_costmap->getCost(w, h) >
+                nav2_costmap_2d::MAX_NON_OBSTACLE) {
+              hybrid_a_star_->SetObstacle(w, h);
+            }
+          }
+        }
+        hybrid_a_star_->VisualizeMap(
+            "/home/dwayne/workspace/navigation/nav2_ws/src/navigation/"
+            "guided_hybrid_planner/map/retult2.pgm");
+        hybrid_a_star_->setVoronoi(voronoi_);
+        if (hybrid_a_star_->Search(start_state, goal_state)) {
+          auto p = hybrid_a_star_->GetPath();
+          nav_msgs::msg::Path path;
+          path.header.frame_id = global_frame_;
+          for (auto coor : p) {
+            geometry_msgs::msg::PoseStamped pose;
+            pose.pose.position.x = coor.x();
+            pose.pose.position.y = coor.y();
+            pose.pose.orientation =
+                utils_tool::createQuaternionMsgFromYaw(coor.z());
+            path.poses.emplace_back(std::move(pose));
+          }
+          plan_publisher_->publish(path);
+          publishVehiclePath(path, vehicle_width_, vehicle_length_, 3);
+        } else {
+          RCLCPP_ERROR(get_logger(), "fail to search");
+        }
+        // auto tree = hybrid_a_star_->GetSearchedTree();
+
+        // for (auto pair : tree) {
+        //   visualization_publisher_->add_point_pair(Vec2d(pair.head(2)),
+        //                                            Vec2d(pair.tail(2)));
+        // }
+        // visualization_publisher_->publish_point_pairs();
+        // visualization_publisher_->clear_markers();
+        hybrid_a_star_->Reset();
+        break;
+      }
+      case 2: {
+        RCLCPP_INFO(get_logger(), "generateVoronoiMap......");
+        guided_hybrid_a_star_->generateVoronoiMap();
+        RCLCPP_INFO(get_logger(), "collision_checker_......");
+        collision_checker_ = std::make_shared<GridCollisionChecker>(
+            costmap_, serch_info_.angle_segment_size);
+        collision_checker_->setFootprint(costmap_ros_->getRobotFootprint(),
+                                         false, -1.0);
+        RCLCPP_INFO(get_logger(), "createPlan......");
+        nav_msgs::msg::Path plan =
+            createPlan(current_init_pose->pose.pose, current_goal_pose->pose);
+        smoother_->smooth(plan, costmap_, 10);
+        plan_publisher_->publish(plan);
+        break;
+      }
+    }
   }
+}
+
+void GuidedHybridAstarFlow::publishVehiclePath(const nav_msgs::msg::Path& path,
+                                               double width, double length,
+                                               int interval) {
+  visualization_msgs::msg::MarkerArray vehicle_array;
+  for (int i = 0; i < path.poses.size(); i += interval) {
+    visualization_msgs::msg::Marker vehicle;
+    if (i == 0) {
+      vehicle.action = 3;
+    }
+    vehicle.header.frame_id = "map";
+    vehicle.header.stamp = get_clock()->now();
+    vehicle.ns = "vehicle_path";
+    vehicle.type = visualization_msgs::msg::Marker::CUBE;
+    vehicle.id = static_cast<int>(i / interval);
+    vehicle.scale.x = length;
+    vehicle.scale.y = width;
+    vehicle.scale.z = 0.01;
+
+    vehicle.color.r = 1.0;
+    vehicle.color.g = 0.0;
+    vehicle.color.b = 0.0;
+    vehicle.color.a = 0.1;
+    vehicle.pose = path.poses.at(i).pose;
+    vehicle_array.markers.emplace_back(std::move(vehicle));
+  }
+  vehicle_path_publisher_->publish(vehicle_array);
 }
 
 std::string get_cur_time_str() {

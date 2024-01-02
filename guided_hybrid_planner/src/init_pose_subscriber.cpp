@@ -50,7 +50,7 @@ nav2_util::CallbackReturn InitPoseSubscriber2D::on_activate(
   pose->pose.pose.position.x = -3.61773;
   pose->pose.pose.position.y = -2.75289;
   pose->pose.pose.orientation = utils_tool::createQuaternionMsgFromYaw(1.57);
-  init_poses_.emplace_back(pose);
+  // init_poses_.emplace_back(pose);
   createBond();
   return nav2_util::CallbackReturn::SUCCESS;
 }

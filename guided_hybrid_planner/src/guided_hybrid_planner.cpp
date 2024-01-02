@@ -126,9 +126,9 @@ void GuidedHybridPlanner::cleanup() {
   plan_publisher_.reset();
 }
 
-nav_msgs::msg::Path
-GuidedHybridPlanner::createPlan(const geometry_msgs::msg::PoseStamped &start,
-                                const geometry_msgs::msg::PoseStamped &goal) {
+nav_msgs::msg::Path GuidedHybridPlanner::createPlan(
+    const geometry_msgs::msg::PoseStamped &start,
+    const geometry_msgs::msg::PoseStamped &goal) {
   std::lock_guard<std::mutex> lock_reinit(_mutex);
   guided_hybrid_a_star_->setCollisionChecker(collision_checker_);
 
@@ -185,7 +185,7 @@ GuidedHybridPlanner::createPlan(const geometry_msgs::msg::PoseStamped &start,
 
   return plan;
 }
-} // namespace guided_hybrid_a_star
+}  // namespace guided_hybrid_a_star
 
 #include "pluginlib/class_list_macros.hpp"
 

@@ -48,7 +48,19 @@ class DynamicVoronoi {
   //! returns the vertical size of the workspace/map
   unsigned int getSizeY() { return sizeY; }
 
+  void setMapInfo(double origin_x, double origin_y, double map_resolution) {
+    this->origin_x = origin_x;
+    this->origin_y = origin_y;
+    this->map_resolution = map_resolution;
+  }
+
   double getMaxDist() { return max_dist; }
+
+  double getOriginX() { return origin_x; }
+
+  double getOriginY() { return origin_y; }
+
+  double getMapResulution() { return map_resolution; }
 
  private:
   struct dataCell {
@@ -108,6 +120,12 @@ class DynamicVoronoi {
   int sizeX;
   dataCell** data;
   bool** gridMap;
+
+  double origin_x;
+  double origin_y;
+  int map_size_x;
+  int map_size_y;
+  double map_resolution;
 
   // parameters
   int padding;

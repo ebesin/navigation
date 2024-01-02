@@ -11,6 +11,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# glog
+include(cmake/glog.cmake)
+include_directories($(GLOG_INCLUDE_DIRS))
+
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -59,6 +63,8 @@ add_library(${library_name} SHARED
   src/smoother.cpp
   src/dynamicvoronoi/bucketedqueue.cpp
   src/dynamicvoronoi/dynamicvoronoi.cpp
+  src/compare_version/hybrid_a_star.cpp
+  src/compare_version/rs_path.cpp
 )
 
 set(dependencies

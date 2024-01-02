@@ -39,7 +39,7 @@ nav2_util::CallbackReturn GoalPoseSubscriber2D::on_activate(
   pose->pose.position.x = 16.7137;
   pose->pose.position.y = 9.66026;
   pose->pose.orientation = utils_tool::createQuaternionMsgFromYaw(1.57);
-  goal_poses_.emplace_back(pose);
+  // goal_poses_.emplace_back(pose);
   createBond();
   return nav2_util::CallbackReturn::SUCCESS;
 }

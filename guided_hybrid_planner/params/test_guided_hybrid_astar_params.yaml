@@ -53,17 +53,21 @@ guided_hybrid_planner_flow:
   ros__parameters:
     max_iterations: 10000000
     shot_distance: 0.5
-    steer_angle_segment_size: 3
-    wheel_base: 0.5
+    steer_angle_segment_size: 8
+    wheel_base: 0.35
     cost_penalty: 0.0
-    reverse_penalty: 2.0
+    reverse_penalty: 3.0
     change_direction_penalty: 100.0
-    steering_change_penalty: 1.0
-    steering_penalty: 1.0
-    max_steer_angle: 25.0
+    steering_change_penalty: 2.0
+    steering_penalty: 1.5
+    max_steer_angle: 15.0
     publish_serch_tree: true
     show_log: false
     serch_radius: 4.0
+    algo_type: 1
+    vehicle_width: 0.2
+    vehicle_length: 0.45
+    vehicle_rear_axle_dist: 0.05
 
     smoother:
       max_iterations: 1000

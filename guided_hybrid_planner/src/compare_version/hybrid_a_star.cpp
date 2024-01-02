@@ -28,6 +28,7 @@
 
 #include "compare_version/hybrid_a_star.h"
 
+#include <algorithm>
 #include <iostream>
 
 // #include "hybrid_a_star/display_tools.h"
@@ -42,7 +43,7 @@ HybridAStar::HybridAStar(double steering_angle, int steering_angle_discrete_num,
                          int grid_size_phi) {
   wheel_base_ = wheel_base;
   segment_length_ = segment_length;
-  steering_radian_ = steering_angle * M_PI / 180.0;  // angle to radian
+  steering_radian_ = steering_angle;  // angle to radian
   steering_discrete_num_ = steering_angle_discrete_num;
   steering_radian_step_size_ = steering_radian_ / steering_discrete_num_;
   move_step_size_ = segment_length / segment_length_discrete_num;
@@ -52,11 +53,12 @@ HybridAStar::HybridAStar(double steering_angle, int steering_angle_discrete_num,
   reversing_penalty_ = reversing_penalty;
   shot_distance_ = shot_distance;
 
-  CHECK_EQ(static_cast<float>(segment_length_discrete_num_ * move_step_size_),
-           static_cast<float>(segment_length_))
-      << "The segment length must be divisible by the step size. "
-         "segment_length: "
-      << segment_length_ << " | step_size: " << move_step_size_;
+  // CHECK_EQ(static_cast<float>(segment_length_discrete_num_ *
+  // move_step_size_),
+  //          static_cast<float>(segment_length_))
+  //     << "The segment length must be divisible by the step size. "
+  //        "segment_length: "
+  //     << segment_length_ << " | step_size: " << move_step_size_;
 
   rs_path_ptr_ =
       std::make_shared<RSPath>(wheel_base_ / std::tan(steering_radian_));
@@ -192,6 +194,34 @@ void HybridAStar::Init(double x_lower, double x_upper, double y_lower,
   }
 }
 
+void HybridAStar::VisualizeMap(const char *filename) {
+  // write pgm files
+
+  FILE *F = fopen(filename, "w");
+  if (!F) {
+    std::cerr << "could not open 'result.pgm' for writing!\n";
+    return;
+  }
+  fprintf(F, "P6\n");
+  fprintf(F, "%d %d 255\n", MAP_GRID_SIZE_X_, MAP_GRID_SIZE_Y_);
+
+  for (int y = MAP_GRID_SIZE_Y_ - 1; y >= 0; y--) {
+    for (int x = 0; x < MAP_GRID_SIZE_X_; x++) {
+      unsigned char c = 0;
+      if (map_data_[y * MAP_GRID_SIZE_X_ + x] == 1) {
+        fputc(0, F);
+        fputc(0, F);
+        fputc(0, F);
+      } else {
+        fputc(255, F);
+        fputc(255, F);
+        fputc(255, F);
+      }
+    }
+  }
+  fclose(F);
+}
+
 inline bool HybridAStar::LineCheck(double x0, double y0, double x1, double y1) {
   bool steep = (std::abs(y1 - y0) > std::abs(x1 - x0));
 
@@ -222,14 +252,15 @@ inline bool HybridAStar::LineCheck(double x0, double y0, double x1, double y1) {
   for (unsigned int i = 0; i < N; ++i) {
     if (steep) {
       if (HasObstacle(Vec2i(yk, x0 + i * 1.0)) ||
-          BeyondBoundary(Vec2d(yk * MAP_GRID_RESOLUTION_,
-                               (x0 + i) * MAP_GRID_RESOLUTION_))) {
+          BeyondBoundary(
+              Vec2d(map_x_lower_ + yk * MAP_GRID_RESOLUTION_,
+                    map_y_lower_ + (x0 + i) * MAP_GRID_RESOLUTION_))) {
         return false;
       }
     } else {
       if (HasObstacle(Vec2i(x0 + i * 1.0, yk)) ||
-          BeyondBoundary(Vec2d((x0 + i) * MAP_GRID_RESOLUTION_,
-                               yk * MAP_GRID_RESOLUTION_))) {
+          BeyondBoundary(Vec2d(map_x_lower_ + (x0 + i) * MAP_GRID_RESOLUTION_,
+                               map_y_lower_ + yk * MAP_GRID_RESOLUTION_))) {
         return false;
       }
     }
@@ -446,6 +477,7 @@ void HybridAStar::GetNeighborNodes(
 
       if (!CheckCollision(x, y, theta)) {
         has_obstacle = true;
+        std::cout << "has_obstacle" << std::endl;
         break;
       }
     }
@@ -472,6 +504,7 @@ void HybridAStar::GetNeighborNodes(
 
       if (!CheckCollision(x, y, theta)) {
         has_obstacle = true;
+        std::cout << "has_obstacle" << std::endl;
         break;
       }
     }
@@ -533,38 +566,60 @@ double HybridAStar::ComputeH(const StateNode::Ptr &current_node_ptr,
   return h;
 }
 
+double HybridAStar::ComputeVoronoiCost(
+    const StateNode::Ptr &neighbor_node_ptr) {
+  return 1.0;
+  double total_dist{0.0};
+  double map_res = voronoi_.getMapResulution();
+  for (auto p : neighbor_node_ptr->intermediate_states_) {
+    int map_x = std::min(
+        std::max(static_cast<int>((p.x() - map_x_lower_) / map_res), 0),
+        static_cast<int>(voronoi_.getSizeX() - 1));
+    int map_y = std::min(
+        std::max(static_cast<int>((p.y() - map_y_lower_) / map_res), 0),
+        static_cast<int>(voronoi_.getSizeY() - 1));
+    total_dist += voronoi_.getDistance(map_x, map_y);
+  }
+  double ave_dist = total_dist / neighbor_node_ptr->intermediate_states_.size();
+  return 1 + (1 - ave_dist / voronoi_.getMaxDist());
+}
+
 double HybridAStar::ComputeG(const StateNode::Ptr &current_node_ptr,
-                             const StateNode::Ptr &neighbor_node_ptr) const {
+                             const StateNode::Ptr &neighbor_node_ptr) {
   double g;
+  double voronio_cost = ComputeVoronoiCost(neighbor_node_ptr);
   if (neighbor_node_ptr->direction_ == StateNode::FORWARD) {
     if (neighbor_node_ptr->steering_grade_ !=
         current_node_ptr->steering_grade_) {
       if (neighbor_node_ptr->steering_grade_ == 0) {
-        g = segment_length_ * steering_change_penalty_;
+        g = voronio_cost * segment_length_ * steering_change_penalty_;
       } else {
-        g = segment_length_ * steering_change_penalty_ * steering_penalty_;
+        g = voronio_cost * segment_length_ * steering_change_penalty_ *
+            steering_penalty_;
       }
     } else {
       if (neighbor_node_ptr->steering_grade_ == 0) {
-        g = segment_length_;
+        g = voronio_cost * segment_length_;
       } else {
-        g = segment_length_ * steering_penalty_;
+        g = voronio_cost * segment_length_ * steering_penalty_;
       }
     }
   } else {
     if (neighbor_node_ptr->steering_grade_ !=
         current_node_ptr->steering_grade_) {
       if (neighbor_node_ptr->steering_grade_ == 0) {
-        g = segment_length_ * steering_change_penalty_ * reversing_penalty_;
-      } else {
-        g = segment_length_ * steering_change_penalty_ * steering_penalty_ *
+        g = voronio_cost * segment_length_ * steering_change_penalty_ *
             reversing_penalty_;
+      } else {
+        g = voronio_cost * segment_length_ * steering_change_penalty_ *
+            steering_penalty_ * reversing_penalty_;
       }
     } else {
       if (neighbor_node_ptr->steering_grade_ == 0) {
-        g = segment_length_ * reversing_penalty_;
+        g = voronio_cost * segment_length_ * reversing_penalty_;
       } else {
-        g = segment_length_ * steering_penalty_ * reversing_penalty_;
+        g = voronio_cost * segment_length_ * steering_penalty_ *
+            reversing_penalty_;
       }
     }
   }
@@ -623,6 +678,7 @@ bool HybridAStar::Search(const Vec3d &start_state, const Vec3d &goal_state) {
           grid_node_ptr = grid_node_ptr->parent_node_;
           path_length_ = path_length_ + segment_length_;
         }
+        std::cout << "rs_length: " << rs_length << std::endl;
         path_length_ = path_length_ - segment_length_ + rs_length;
 
         std::cout << "ComputeH use time(ms): " << compute_h_time << std::endl;
@@ -701,6 +757,7 @@ bool HybridAStar::Search(const Vec3d &start_state, const Vec3d &goal_state) {
     }
 
     count++;
+    std::cout << "count: " << count << std::endl;
     if (count > 5000000) {
       //   ROS_WARN("Exceeded the number of iterations, the search failed");
       std::cout << "Exceeded the number of iterations, the search failed"
@@ -710,6 +767,42 @@ bool HybridAStar::Search(const Vec3d &start_state, const Vec3d &goal_state) {
   }
 
   return false;
+}
+
+void HybridAStar::generateVoronoiMap() {
+  unsigned int size_x = MAP_GRID_SIZE_X_;
+  unsigned int size_y = MAP_GRID_SIZE_Y_;
+  voronoi_.initializeEmpty(size_x, size_y);
+  std::vector<IntPoint> new_free_cells, new_occupied_cells;
+  for (unsigned int j = 0; j < size_y; ++j) {
+    for (unsigned int i = 0; i < size_x; ++i) {
+      if (voronoi_.isOccupied(i, j) &&
+          map_data_[i + j * MAP_GRID_SIZE_X_] != 1) {
+        new_free_cells.push_back(IntPoint(i, j));
+      }
+
+      if (!voronoi_.isOccupied(i, j) &&
+          map_data_[i + j * MAP_GRID_SIZE_X_] == 1) {
+        new_occupied_cells.push_back(IntPoint(i, j));
+      }
+    }
+  }
+
+  for (size_t i = 0; i < new_free_cells.size(); ++i) {
+    voronoi_.clearCell(new_free_cells[i].x, new_free_cells[i].y);
+  }
+
+  for (size_t i = 0; i < new_occupied_cells.size(); ++i) {
+    voronoi_.occupyCell(new_occupied_cells[i].x, new_occupied_cells[i].y);
+  }
+  voronoi_.update();
+  voronoi_.prune();
+
+  voronoi_.visualize(
+      "/home/dwayne/workspace/navigation/nav2_ws/src/navigation/"
+      "guided_hybrid_planner/map/retult.pgm");
+  // RCLCPP_INFO(logger_, "voronoi max dist: %f", voronoi_.getMaxDist());
+  std::cout << "voronoi max dist: " << voronoi_.getMaxDist() << std::endl;
 }
 
 VectorVec4d HybridAStar::GetSearchedTree() {

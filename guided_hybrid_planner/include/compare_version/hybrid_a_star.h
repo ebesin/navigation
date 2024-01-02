@@ -29,11 +29,12 @@
 #ifndef HYBRID_A_STAR_HYBRID_A_STAR_H
 #define HYBRID_A_STAR_HYBRID_A_STAR_H
 
-#include <glog/logging.h>
+// #include <glog/logging.h>
 
 #include <map>
 #include <memory>
 
+#include "dynamicvoronoi/dynamicvoronoi.h"
 #include "rs_path.h"
 #include "state_node.h"
 
@@ -78,6 +79,8 @@ class HybridAStar {
 
   void SetObstacle(unsigned int x, unsigned int y);
 
+  void VisualizeMap(const char *filename);
+
   /*!
    * Set vehicle shape
    * Consider the shape of the vehicle as a rectangle.
@@ -93,6 +96,12 @@ class HybridAStar {
    */
   void SetVehicleShape(double length, double width, double rear_axle_dist);
 
+  float getVoronoiCost(int m_x, int m_y);
+
+  void generateVoronoiMap();
+
+  void setVoronoi(const DynamicVoronoi voronoi) { voronoi_ = voronoi; }
+
   void Reset();
 
  private:
@@ -107,8 +116,10 @@ class HybridAStar {
   bool AnalyticExpansions(const StateNode::Ptr &current_node_ptr,
                           const StateNode::Ptr &goal_node_ptr, double &length);
 
+  double ComputeVoronoiCost(const StateNode::Ptr &neighbor_node_ptr);
+
   inline double ComputeG(const StateNode::Ptr &current_node_ptr,
-                         const StateNode::Ptr &neighbor_node_ptr) const;
+                         const StateNode::Ptr &neighbor_node_ptr);
 
   inline double ComputeH(const StateNode::Ptr &current_node_ptr,
                          const StateNode::Ptr &terminal_node_ptr);
@@ -151,6 +162,8 @@ class HybridAStar {
   StateNode::Ptr ***state_node_map_ = nullptr;
 
   std::multimap<double, StateNode::Ptr> openset_;
+
+  DynamicVoronoi voronoi_;
 
   double wheel_base_;  // The distance between the front and rear axles
   double segment_length_;
